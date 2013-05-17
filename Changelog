@@ -1,0 +1,34 @@
+2013-05-17 - 1.1.5
+* Add COPYRIGHT file
+* Update COPYRIGHT years to include 2013
+* Remove debug printf and puts
+* Fixup indentation
+* Switch build system to CMake
+* Import into GitHub.com
+
+2012-10-11 - 1.1.4
+* Handle Ctrl-w (kill word)
+
+2012-06-14 - 1.1.3
+* Handle Ctrl-k (kill line)
+
+2012-02-02 - 1.1.2
+* Handle printable characters from the Latin-1 to Latin-9 sets
+* Handle KeyPad motion (Up, Down, ...) and digits keys
+* Fix a bug that caused the PATH scanning routine to ignore the last path element, and simplify the algorithm.
+
+2010-08-16 - 1.1.1
+* Do not dump history contents on startup
+
+2009-10-09 - 1.1.0
+* Make thingylaunch history-aware
+* Use pkg-config to find libX11
+
+2009-10-06 - 1.0.1
+* Correct a subtle misbehavior in completion code
+* Added this Changelog
+
+2009-10-01 - 1.0.0
+* Initial fork
+* Tab-completion
+* Navigation keys [Home, Left, Right, End]
