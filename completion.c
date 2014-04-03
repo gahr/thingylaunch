@@ -1,5 +1,5 @@
 /*-
-  Copyright (C) 2009-2013 Pietro Cerutti <gahr@gahr.ch>
+  Copyright (C) 2009-2014 Pietro Cerutti <gahr@gahr.ch>
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions
@@ -36,45 +36,45 @@
 #include "completion.h"
 
 #ifdef LINT
-extern char *strdup(const char *);
+extern char * strdup(const char *);
 #endif
 
 static int comp_compare(const void *, const void *);
 
 typedef struct {
-	char  *pathname;
-	char  *filename;
-	char  *fullpath;
+	char * pathname;
+	char * filename;
+	char * fullpath;
 } exec_elem_t;
 
 struct comp_ {
-	char        **path_elem;
-	exec_elem_t  *exec_elem;
-	exec_elem_t  *curr_elem;
-	char         *last_hint;
-	size_t        last_hint_len;
-	size_t        nof_path_elem;
-	size_t        nof_exec_elem;
-	uid_t         uid;
-	gid_t         gid;
+	char        ** path_elem;
+	exec_elem_t  * exec_elem;
+	exec_elem_t  * curr_elem;
+	char         * last_hint;
+	size_t         last_hint_len;
+	size_t         nof_path_elem;
+	size_t         nof_exec_elem;
+	uid_t          uid;
+	gid_t          gid;
 };
 
 
 comp_t
 comp_init(void)
 {
-	comp_t       comp;
-	exec_elem_t *curr_elem;
-	char        *curr_path;
-	char        *path;
-	char        *path_elem_end;
-	size_t       path_len;
-	size_t       curr_path_len;
+	comp_t        comp;
+	exec_elem_t * curr_elem;
+	char        * curr_path;
+	char        * path;
+	char        * path_elem_end;
+	size_t        path_len;
+	size_t        curr_path_len;
 
-	char           buffer[MAX_CMD_LEN+1];
-	struct dirent *dp;
-	struct stat    sb;
-	DIR           *dirp = NULL;
+	char            buffer[MAX_CMD_LEN+1];
+	struct dirent * dp;
+	struct stat     sb;
+	DIR           * dirp = NULL;
 
 
 	/*
@@ -213,7 +213,7 @@ comp_reset(comp_t comp)
 }
 
 char *
-comp_next(comp_t comp, char *hint)
+comp_next(comp_t comp, char * hint)
 {
 	size_t i;
 
@@ -261,10 +261,10 @@ comp_dump(comp_t comp)
 }
 
 static int
-comp_compare(const void *vexec_elem_1, const void *vexec_elem_2)
+comp_compare(const void * vexec_elem_1, const void * vexec_elem_2)
 {
-	const exec_elem_t *a = vexec_elem_1;
-	const exec_elem_t *b = vexec_elem_2;
+	const exec_elem_t * a = vexec_elem_1;
+	const exec_elem_t * b = vexec_elem_2;
 
 	return (strcmp(a->filename, b->filename));
 }

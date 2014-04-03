@@ -1,5 +1,5 @@
 /*-
-  Copyright (C) 2009-2013 Pietro Cerutti <gahr@gahr.ch>
+  Copyright (C) 2009-2014 Pietro Cerutti <gahr@gahr.ch>
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions
@@ -34,7 +34,7 @@
 #define STRING(x) #x
 
 struct hist_ {
-	char    **hist_elem;
+	char   ** hist_elem;
 	size_t    curr_elem;
 	size_t    nof_hist_elem;
 };
@@ -42,11 +42,11 @@ struct hist_ {
 hist_t
 hist_init(void)
 {
-	hist_t  hist;
-	char    history_file[MAX_CMD_LEN];
-	char    buffer[MAX_CMD_LEN+1];
-	FILE   *fd = NULL;
-	int     rc, nof_chars, c;
+	hist_t   hist;
+	char     history_file[MAX_CMD_LEN];
+	char     buffer[MAX_CMD_LEN+1];
+	FILE   * fd = NULL;
+	int      rc, nof_chars, c;
 
 	/*
 	 * initialize structure
@@ -139,11 +139,11 @@ hist_prev(hist_t hist)
 }
 
 int
-hist_save(hist_t hist, const char *cmd)
+hist_save(hist_t hist, const char * cmd)
 {
 	size_t  i = 0;
 	char    history_file[MAX_CMD_LEN];
-	FILE   *fd;
+	FILE  * fd;
 
 	snprintf(history_file, MAX_CMD_LEN, "%s/%s", getenv("HOME"), "/.thingylaunch.history");
 
