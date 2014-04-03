@@ -30,9 +30,6 @@
 #include "history.h"
 #include "completion.h"
 
-#define XSTRING(x) STRING(x)
-#define STRING(x) #x
-
 struct hist_ {
 	char   ** hist_elem;
 	size_t    curr_elem;

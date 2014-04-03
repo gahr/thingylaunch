@@ -23,6 +23,7 @@
 
 #include "completion.h"
 #include "history.h"
+#include "bookmark.h"
 
 static void createWindow();
 static void eventLoop();
@@ -31,6 +32,7 @@ static void redraw();
 static void keypress(XKeyEvent * keyevent);
 static void execcmd();
 static void die(const char * message);
+static void cleanup();
 
 Display * display;
 GC gc;
@@ -41,6 +43,7 @@ int screen_num;
 
 comp_t comp;
 hist_t hist;
+book_t book;
 
 #define WINWIDTH 640
 #define WINHEIGHT 25
@@ -55,11 +58,15 @@ main(void)
 	cursor_pos = 0;
 
 	if (!(comp = comp_init())) {
-		exit(1);
+		die("Could not initialize completion");
 	}
 
 	if (!(hist = hist_init())) {
-		exit (1);
+		die("Could not initialize history");
+	}
+
+	if (!(book = book_init())) {
+		die("Could not initialize bookmarks");
 	}
 
 	createWindow();
@@ -234,11 +241,20 @@ keypress(XKeyEvent * keyevent)
 	buffer[len] = '\0';
 	len = strlen(command);
 
+	/* check for an Alt-key meaning bookmark lookup */
+	if (keyevent->state & Mod1Mask) {
+		cmd = book_lookup(book, buffer[0]);
+		if (cmd != NULL) {
+			snprintf(command, MAX_CMD_LEN, "%s", cmd);
+			cursor_pos = strlen(command);
+			hist_save(hist, command);
+			execcmd();
+		}
+	}
+
 	switch(key_symbol) {
 		case XK_Escape:
-			comp_cleanup(comp);
-			hist_cleanup(hist);
-			exit(0);
+			cleanup(0);
 			break;
 
 		case XK_BackSpace:
@@ -352,14 +368,15 @@ keypress(XKeyEvent * keyevent)
 static void
 execcmd()
 {
-    command[cursor_pos] = '\0';
+	command[cursor_pos] = '\0';
 	char * shell;
 	char * argv[4];
 
+	XUngrabKeyboard(display, CurrentTime);
 	XDestroyWindow(display, win);
 
 	if (fork()) {
-		exit(0);
+		cleanup(0);
 	}
 
 	shell = getenv("SHELL");
@@ -374,14 +391,26 @@ execcmd()
 
 	execv(shell, argv);
 	die("aiee, after exec");
-
 }
 
 static void
-die(const char * msg) {
-
+die(const char * msg)
+{
 	fprintf(stderr, "Error: %s\n", msg);
-	exit(1);
+	cleanup(1);
+}
+
+static void
+cleanup(int rc)
+{
+	if (comp)
+		comp_cleanup(comp);
+	if (hist)
+		hist_cleanup(hist);
+	if (book)
+		book_cleanup(book);
+
+	exit(rc);
 }
 
 

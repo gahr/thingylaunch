@@ -1,5 +1,5 @@
 /*-
-  Copyright (C) 2009-2014 Pietro Cerutti <gahr@gahr.ch>
+  Copyright (C) 2014 Pietro Cerutti <gahr@gahr.ch>
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions
@@ -23,22 +23,13 @@
   SUCH DAMAGE.
 */
 
-#ifndef COMPLETION_H
-#define COMPLETION_H
+#ifndef BOOKMARK_H
+#define BOOKMARK_H
 
-#include <limits.h>
+typedef struct book_ * book_t;
 
-#define MAX_CMD_LEN 256
-#define XSTRING(x) STRING(x)
-#define STRING(x) #x
+book_t book_init(void);
+char * book_lookup(book_t, char);
+void   book_cleanup(book_t);
 
-typedef struct comp_ * comp_t;
-
-comp_t comp_init(void);
-char * comp_next(comp_t, char *);
-void   comp_reset(comp_t);
-void   comp_dump(comp_t);
-void   comp_cleanup(comp_t);
-
-
-#endif /* !COMPLETION_H */
+#endif /* !BOOKMARK_H*/

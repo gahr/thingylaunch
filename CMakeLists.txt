@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
 
 SET (TL_PROJECT_NAME thingylaunch)
-SET (TL_PROJECT_VERS 1.1.6)
+SET (TL_PROJECT_VERS 1.1.7)
 
 PROJECT (${TL_PROJECT_NAME})
 
@@ -14,6 +14,7 @@ INCLUDE_DIRECTORIES (${X11_X11_INCLUDE_PATH})
 
 ADD_EXECUTABLE (
     ${TL_PROJECT_NAME}
+    bookmark.c
     completion.c
     history.c
     thingylaunch.c
