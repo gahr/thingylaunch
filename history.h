@@ -1,5 +1,5 @@
 /*-
-  Copyright (C) 2009-2013 Pietro Cerutti <gahr@gahr.ch>
+  Copyright (C) 2009-2014 Pietro Cerutti <gahr@gahr.ch>
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions
@@ -28,13 +28,13 @@
 
 #define MAX_HISTORY_LINES 100
 
-typedef struct hist_ *hist_t;
+typedef struct hist_ * hist_t;
 
-hist_t hist_init(void);
-char  *hist_next(hist_t);
-char  *hist_prev(hist_t);
-int    hist_save(hist_t, const char *);
-void   hist_dump(hist_t);
-void   hist_cleanup(hist_t);
+hist_t  hist_init(void);
+char  * hist_next(hist_t);
+char  * hist_prev(hist_t);
+int     hist_save(hist_t, const char *);
+void    hist_dump(hist_t);
+void    hist_cleanup(hist_t);
 
 #endif /* !HISTORY_H */

@@ -3,7 +3,7 @@
  * You run the program, it grabs the display (hopefully nothing else has it
  * grabbed), and you type what you want to run. The styling is minimalist.
  *
- * (c) 2009-2013 Pietro Cerutti
+ * (c) 2009-2014 Pietro Cerutti
  * gahr (at) gahr.ch
  *
  * (c) 2003 Matt Johnston
@@ -25,21 +25,19 @@
 #include "history.h"
 
 static void createWindow();
-static void setupGC();
 static void eventLoop();
 static void grabHack();
 static void redraw();
 static void keypress(XKeyEvent * keyevent);
 static void execcmd();
-static void die(const char* message);
+static void die(const char * message);
 
 Display * display;
 GC gc;
 GC rectgc;
 Window win;
-XFontStruct* font_info;
+XFontStruct * font_info;
 int screen_num;
-unsigned long black, white;
 
 comp_t comp;
 hist_t hist;
@@ -52,9 +50,8 @@ char command[MAX_CMD_LEN+1];
 size_t cursor_pos;
 
 int
-main(void) {
-
-	command[0] = 0x0;
+main(void)
+{
 	cursor_pos = 0;
 
 	if (!(comp = comp_init())) {
@@ -67,25 +64,30 @@ main(void) {
 
 	createWindow();
 
-	setupGC();
-
 	grabHack();
 
 	eventLoop();
 
 	/* don't return */
 	return 1; /* keep compilers happy */
-
 }
 
 static void
-createWindow() {
-
-	char *display_name;
+createWindow()
+{
+	char * display_name;
+	char * font_name;
 	int display_width, display_height;
 	int top, left;
-	XSizeHints* win_size_hints;
+	int valuemask = 0;
+	int line_width = 1;
+	int line_style = LineSolid;
+	int cap_style = CapButt;
+	int join_style = JoinBevel;
+	unsigned long black, white;
+	XSizeHints * win_size_hints;
 	XSetWindowAttributes attrib;
+	XGCValues values;
 
 	display_name = getenv("DISPLAY");
 	if (display_name == NULL) {
@@ -107,10 +109,6 @@ createWindow() {
 	black = BlackPixel(display, screen_num);
 	white = WhitePixel(display, screen_num);
 
-	/*win = XCreateSimpleWindow(display, RootWindow(display, screen_num),
-	  left, top, WINWIDTH, WINHEIGHT, borderwidth, 
-	  black, black);*/
-
 	attrib.override_redirect= True;
 	win = XCreateWindow(display, RootWindow(display, screen_num),
 			left, top, WINWIDTH, WINHEIGHT, 
@@ -129,24 +127,12 @@ createWindow() {
 	win_size_hints->min_height = win_size_hints->max_height = WINHEIGHT;
 	XSetWMNormalHints(display, win, win_size_hints);
 
-
 	XFree(win_size_hints);
 
+	/* show window */
 	XMapWindow(display, win);
 
-}
-
-static void
-setupGC() {
-
-	XGCValues values;
-	int valuemask = 0;
-	int line_width = 1;
-	int line_style = LineSolid;
-	int cap_style = CapButt;
-	int join_style = JoinBevel;
-	char* font_name;
-
+	/* setup GC */
 	gc = XCreateGC(display, win, valuemask, &values);
 	rectgc = XCreateGC(display, win, valuemask, &values);
 	XSetForeground(display, gc, white);
@@ -166,12 +152,11 @@ setupGC() {
 	}
 
 	XSetFont(display, gc, font_info->fid);
-
 }
 
 static void
-eventLoop() {
-
+eventLoop()
+{
 	XEvent e;
 
 	redraw();
@@ -196,8 +181,8 @@ eventLoop() {
 
 /* this loop is required since pwm grabs the keyboard during the event loop */
 static void
-grabHack() {
-
+grabHack()
+{
 	struct timespec req;
 	req.tv_sec = 0;
 	req.tv_nsec = 5000000;
@@ -219,8 +204,8 @@ grabHack() {
 }
 
 static void
-redraw() {
-
+redraw()
+{
 	int font_height;
 	int textwidth;
 
@@ -234,21 +219,19 @@ redraw() {
 			2 + textwidth + 10, font_height+4);
 
 	XFlush(display);
-
-
 }
 
 static void
-keypress(XKeyEvent * keyevent) {
-
+keypress(XKeyEvent * keyevent)
+{
 #define KEYBUFLEN 20
 	char buffer[KEYBUFLEN+1];
-	char *cmd;
+	char * cmd;
 	KeySym key_symbol;
 	size_t len, tmp_pos;
 
 	len = XLookupString(keyevent, buffer, 1, &key_symbol, NULL);
-	buffer[len] = 0x0;
+	buffer[len] = '\0';
 	len = strlen(command);
 
 	switch(key_symbol) {
@@ -281,7 +264,7 @@ keypress(XKeyEvent * keyevent) {
 		case XK_KP_Up:
 			cmd = hist_prev(hist);
 			if (cmd)
-				sprintf(command, "%s", cmd);
+				snprintf(command, MAX_CMD_LEN, "%s", cmd);
 			else
 				command[0] = '\0';
 			cursor_pos = strlen(command);
@@ -291,7 +274,7 @@ keypress(XKeyEvent * keyevent) {
 		case XK_KP_Down:
 			cmd = hist_next(hist);
 			if (cmd)
-				sprintf(command, "%s", cmd);
+				snprintf(command, MAX_CMD_LEN, "%s", cmd);
 			else
 				command[0] = '\0';
 			cursor_pos = strlen(command);
@@ -319,7 +302,7 @@ keypress(XKeyEvent * keyevent) {
 				break;
 			}
 			cmd = strrchr(cmd, '/');
-			sprintf(command, "%s", cmd+1);
+			snprintf(command, MAX_CMD_LEN, "%s", cmd+1);
 			cursor_pos = strlen(cmd+1);
 			break;
 
@@ -353,23 +336,23 @@ keypress(XKeyEvent * keyevent) {
 	/* normal printable chars including Latin-[1-8] + Keybad numbers */
 	if ((key_symbol >= 0x20 && key_symbol <= 0x13be) || (key_symbol >= 0xffb0 && key_symbol <= 0xffb9)) {
 		if (len < MAX_CMD_LEN) {
+			/* if we're not appending, shift the following characters */
 			if (cursor_pos != len) {
-				for (tmp_pos = len; tmp_pos > cursor_pos; tmp_pos--) {
-					command[tmp_pos] = command[tmp_pos-1];
-				}
+				memmove(&command[cursor_pos+1], &command[cursor_pos], len-cursor_pos);
 			}
 			command[cursor_pos++] = buffer[0];
+			command[len+1] = '\0';
 			comp_reset(comp);
 		}
 	}
 
 	redraw();
-
 }
 
 static void
-execcmd() {
-
+execcmd()
+{
+    command[cursor_pos] = '\0';
 	char * shell;
 	char * argv[4];
 
@@ -395,7 +378,7 @@ execcmd() {
 }
 
 static void
-die(const char* msg) {
+die(const char * msg) {
 
 	fprintf(stderr, "Error: %s\n", msg);
 	exit(1);

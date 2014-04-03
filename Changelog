@@ -1,3 +1,8 @@
+2014-04-03 - 1.1.6
+* Fix a bug where the command line wasn't always '\0'-terminated
+* Fix style here and there
+* Update COPYRIGHT years to include 2014
+
 2013-05-17 - 1.1.5
 * Add COPYRIGHT file
 * Update COPYRIGHT years to include 2013

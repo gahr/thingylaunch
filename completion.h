@@ -1,5 +1,5 @@
 /*-
-  Copyright (C) 2009-2013 Pietro Cerutti <gahr@gahr.ch>
+  Copyright (C) 2009-2014 Pietro Cerutti <gahr@gahr.ch>
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions
@@ -30,10 +30,10 @@
 
 #define MAX_CMD_LEN 256
 
-typedef struct comp_ *comp_t;
+typedef struct comp_ * comp_t;
 
 comp_t comp_init(void);
-char  *comp_next(comp_t, char *);
+char * comp_next(comp_t, char *);
 void   comp_reset(comp_t);
 void   comp_dump(comp_t);
 void   comp_cleanup(comp_t);
