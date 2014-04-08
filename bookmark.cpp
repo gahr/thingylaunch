@@ -30,9 +30,9 @@
 #include "util.h"
 
 Bookmark::Bookmark()
-    : m_bookmarkFile { ".thingylaunch.bookmarks" }
+    : m_bookmarkFile { Util::getEnv("HOME") + "/.thingylaunch.bookmarks" }
 {
-    std::ifstream inFile { Util::getFileFromHome(m_bookmarkFile) };
+    std::ifstream inFile { m_bookmarkFile };
     char c;
     std::string command;
     while (inFile >> c >> command)

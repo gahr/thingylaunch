@@ -31,12 +31,12 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <cstdlib> // getenv
 #include <iostream>
 
 #include "completion.h"
 #include "history.h"
 #include "bookmark.h"
+#include "util.h"
 
 #define WINWIDTH 640
 #define WINHEIGHT 25
@@ -66,6 +66,7 @@ class Thingylaunch {
 
     private:
         /* X11 */
+        std::string   m_displayName;
         Display     * m_display;
         GC            m_gc;
         GC            m_rectgc;
@@ -122,12 +123,13 @@ main(int argc, char **argv)
 void
 Thingylaunch::openDisplay()
 {
-    const char * display_name = getenv("DISPLAY");
-    if (display_name == NULL) {
-        die("DISPLAY not set");
+    try {
+        m_displayName = Util::getEnv("DISPLAY");
+    } catch (std::runtime_error& e) {
+        die(e.what());
     }
 
-    m_display = XOpenDisplay(display_name);
+    m_display = XOpenDisplay(m_displayName.c_str());
     if (m_display == NULL) {
         die("Couldn't connect to DISPLAY");
     }
@@ -140,8 +142,8 @@ Thingylaunch::createWindow()
 {
 
     /* figure out the window location */
-    int top = DisplayHeight(m_display, m_screenNum) / 2 - WINHEIGHT / 2;
-    int left = DisplayWidth(m_display, m_screenNum) / 2 - WINWIDTH / 2;
+    int top { DisplayHeight(m_display, m_screenNum) / 2 - WINHEIGHT / 2 };
+    int left { DisplayWidth(m_display, m_screenNum) / 2 - WINWIDTH / 2 };
 
     /* create the window */
     XSetWindowAttributes attrib;
@@ -214,11 +216,11 @@ Thingylaunch::parseColorName(std::string colorName)
 void
 Thingylaunch::setupGC()
 {
-    int valuemask = 0;
-    int line_width = 1;
-    int line_style = LineSolid;
-    int cap_style = CapButt;
-    int join_style = JoinBevel;
+    int valuemask { 0 };
+    int line_width { 1 };
+    int line_style { LineSolid };
+    int cap_style { CapButt };
+    int join_style { JoinBevel };
     XGCValues values;
 
     /* GC for text */
@@ -244,17 +246,15 @@ Thingylaunch::grabHack()
     struct timespec req;
     req.tv_sec = 0;
     req.tv_nsec = 5000000;
-    unsigned long maxwait = 3000000000UL; /* 3 seconds */
+    unsigned long maxwait { 3000000000UL }; /* 3 seconds */
     unsigned int i;
-    int x;
 
     redraw();
 
     /* this loop is required since pwm grabs the keyboard during the event loop */
     for (i = 0; i < (maxwait / req.tv_nsec); i++) {
         nanosleep(&req, NULL);
-        x = XGrabKeyboard(m_display, m_win, False, GrabModeAsync, GrabModeAsync, CurrentTime);
-        if (x == 0) {
+        if (XGrabKeyboard(m_display, m_win, False, GrabModeAsync, GrabModeAsync, CurrentTime) == 0) {
             return;
         }
     }
@@ -294,8 +294,8 @@ Thingylaunch::eventLoop()
 void
 Thingylaunch::redraw()
 {
-    int font_height = m_fontInfo->ascent + m_fontInfo->descent;
-    int cursorLeft = XTextWidth(m_fontInfo, m_command.c_str(), m_cursorPos - m_command.begin());
+    int font_height { m_fontInfo->ascent + m_fontInfo->descent };
+    int cursorLeft { XTextWidth(m_fontInfo, m_command.c_str(), m_cursorPos - m_command.begin()) };
 
     XFillRectangle(m_display, m_win, m_rectgc, 0, 0, WINWIDTH, WINHEIGHT);
     XDrawRectangle(m_display, m_win, m_gc, 0, 0, WINWIDTH-1, WINHEIGHT-1);
@@ -431,9 +431,6 @@ Thingylaunch::keypress(XKeyEvent * keyevent)
 void
 Thingylaunch::execcmd()
 {
-    const char * shell;
-    const char * argv[4] { 0 };
-
     XUngrabKeyboard(m_display, CurrentTime);
     XDestroyWindow(m_display, m_win);
 
@@ -441,17 +438,20 @@ Thingylaunch::execcmd()
         return;
     }
 
-    shell = getenv("SHELL");
-    if (!shell) {
+    std::string shell;
+    try {
+        shell = Util::getEnv("SHELL");
+    } catch (...) {
         shell = "/bin/sh";
     }
 
-    argv[0] = basename(shell);
+    const char * argv[4] { 0 };
+    argv[0] = basename(shell.c_str());
     argv[1] = "-c";
     argv[2] = m_command.c_str();
     argv[3] = NULL;
 
-    execv(shell, const_cast<char * const *>(argv));
+    execv(shell.c_str(), const_cast<char * const *>(argv));
     /* not reached */
 }
 

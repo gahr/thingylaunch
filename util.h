@@ -30,7 +30,7 @@
 
 class Util {
     public:
-        static std::string getFileFromHome(std::string fileName);
+        static std::string getEnv(std::string fileName);
 };
 
 #endif /* !UTIL_H */

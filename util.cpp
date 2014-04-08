@@ -29,12 +29,11 @@
 #include "util.h"
 
 std::string
-Util::getFileFromHome(std::string fileName)
+Util::getEnv(std::string varName)
 {
-    std::string file;
-    const char * home { getenv("HOME") };
-    if (home == nullptr) {
-        throw std::runtime_error { "Could not find HOME environment variable." };
+    const char * var { getenv(varName.c_str()) };
+    if (var == nullptr) {
+        throw std::runtime_error { std::string("Could not find ") + varName + " environment variable" };
     }
-    return file + home + "/" + fileName;
+    return var;
 }
