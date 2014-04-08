@@ -1,3 +1,7 @@
+2014-04-08 - 1.2.0
+* Simplify the code by rewriting the whole thing in C++
+* Implement the -fg (foreground color) and -bg (background color) options
+
 2014-04-03 - 1.1.7
 * Implement bookmarks, see README.md for details
 

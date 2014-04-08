@@ -26,10 +26,21 @@
 #ifndef BOOKMARK_H
 #define BOOKMARK_H
 
-typedef struct book_ * book_t;
+#include <map>
+#include <string>
 
-book_t book_init(void);
-char * book_lookup(book_t, char);
-void   book_cleanup(book_t);
+class Bookmark {
+    public:
+        Bookmark();
+        ~Bookmark();
+        std::string lookup(char letter);
+
+    private:
+        std::string getBookmarkFile();
+
+    private:
+        std::string m_bookmarkFile;
+        std::map<char, std::string> m_bookmarks;
+};
 
 #endif /* !BOOKMARK_H*/

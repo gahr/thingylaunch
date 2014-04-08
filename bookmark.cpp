@@ -1,5 +1,5 @@
 /*-
-  Copyright (C) 2009-2014 Pietro Cerutti <gahr@gahr.ch>
+  Copyright (C) 2014 Pietro Cerutti <gahr@gahr.ch>
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions
@@ -23,24 +23,33 @@
   SUCH DAMAGE.
 */
 
-#ifndef HISTORY_H
-#define HISTORY_H
+#include <fstream>
+#include <iostream>
 
-#include <string>
-#include <vector>
+#include "bookmark.h"
+#include "util.h"
 
-class History {
-    public:
-        History();
-        ~History();
-        std::string next();
-        std::string prev();
-        void save(std::string entry);
+Bookmark::Bookmark()
+    : m_bookmarkFile { ".thingylaunch.bookmarks" }
+{
+    std::ifstream inFile { Util::getFileFromHome(m_bookmarkFile) };
+    char c;
+    std::string command;
+    while (inFile >> c >> command)
+        m_bookmarks[c] = command;
+}
 
-    private:
-        std::string m_historyFile;
-        std::vector<std::string> m_elements;
-        std::vector<std::string>::iterator m_iter;
-};
+Bookmark::~Bookmark()
+{
+    // nothing to do...
+}
 
-#endif /* !HISTORY_H */
+std::string
+Bookmark::lookup(char letter)
+{
+    auto iter = m_bookmarks.find(letter);
+    if (iter == m_bookmarks.end()) {
+        return std::string();
+    }
+    return iter->second;
+}
