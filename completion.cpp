@@ -84,6 +84,8 @@ Completion::Completion()
         closedir(dirp);
     }
 
+    std::sort(m_elements.begin(), m_elements.end());
+
     /* initialize iterator to the begin */
     m_iter = m_elements.begin();
 }
