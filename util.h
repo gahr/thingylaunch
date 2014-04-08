@@ -1,5 +1,5 @@
 /*-
-  Copyright (C) 2009-2014 Pietro Cerutti <gahr@gahr.ch>
+  Copyright (C) 2014 Pietro Cerutti <gahr@gahr.ch>
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions
@@ -21,26 +21,16 @@
   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
   OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
   SUCH DAMAGE.
-*/
+  */
 
-#ifndef HISTORY_H
-#define HISTORY_H
+#ifndef UTIL_H
+#define UTIL_H
 
 #include <string>
-#include <vector>
 
-class History {
+class Util {
     public:
-        History();
-        ~History();
-        std::string next();
-        std::string prev();
-        void save(std::string entry);
-
-    private:
-        std::string m_historyFile;
-        std::vector<std::string> m_elements;
-        std::vector<std::string>::iterator m_iter;
+        static std::string getFileFromHome(std::string fileName);
 };
 
-#endif /* !HISTORY_H */
+#endif /* !UTIL_H */

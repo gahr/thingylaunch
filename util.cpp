@@ -1,5 +1,5 @@
 /*-
-  Copyright (C) 2009-2014 Pietro Cerutti <gahr@gahr.ch>
+  Copyright (C) 2014 Pietro Cerutti <gahr@gahr.ch>
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions
@@ -21,26 +21,20 @@
   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
   OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
   SUCH DAMAGE.
-*/
+  */
 
-#ifndef HISTORY_H
-#define HISTORY_H
+#include <cstdlib> // getenv
+#include <stdexcept>
 
-#include <string>
-#include <vector>
+#include "util.h"
 
-class History {
-    public:
-        History();
-        ~History();
-        std::string next();
-        std::string prev();
-        void save(std::string entry);
-
-    private:
-        std::string m_historyFile;
-        std::vector<std::string> m_elements;
-        std::vector<std::string>::iterator m_iter;
-};
-
-#endif /* !HISTORY_H */
+std::string
+Util::getFileFromHome(std::string fileName)
+{
+    std::string file;
+    const char * home { getenv("HOME") };
+    if (home == nullptr) {
+        throw std::runtime_error { "Could not find HOME environment variable." };
+    }
+    return file + home + "/" + fileName;
+}

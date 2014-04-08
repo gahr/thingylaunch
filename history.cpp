@@ -21,26 +21,73 @@
   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
   OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
   SUCH DAMAGE.
-*/
+  */
 
-#ifndef HISTORY_H
-#define HISTORY_H
+#include <cstdlib> // getenv
+#include <fstream>
+#include <iostream>
 
-#include <string>
-#include <vector>
+#include "history.h"
+#include "util.h"
 
-class History {
-    public:
-        History();
-        ~History();
-        std::string next();
-        std::string prev();
-        void save(std::string entry);
+History::History()
+    : m_historyFile { ".thingylaunch.history" }
+{
+    std::ifstream inFile { Util::getFileFromHome(m_historyFile) };
+    std::string line;
+    int i { 0 };
 
-    private:
-        std::string m_historyFile;
-        std::vector<std::string> m_elements;
-        std::vector<std::string>::iterator m_iter;
-};
+    while (inFile.good()) {
+        std::getline(inFile, line);
+        if (!line.empty()) {
+            m_elements.push_back(std::move(line));
+        }
+    }
 
-#endif /* !HISTORY_H */
+    m_iter = m_elements.begin() - 1;
+}
+
+History::~History()
+{
+    // nothing to do...
+}
+
+std::string
+History::next()
+{
+    if (m_elements.empty()) {
+        return std::string();
+    }
+
+    if (m_iter >= m_elements.end()-1) {
+        m_iter = m_elements.begin() - 1;
+    }
+
+    ++m_iter;
+
+    return *m_iter;
+}
+
+std::string
+History::prev()
+{
+    if (m_elements.empty()) {
+        return std::string();
+    }
+
+    if (m_iter <= m_elements.begin()) {
+        m_iter = m_elements.end();
+    }
+
+    --m_iter;
+
+    return *m_iter;
+}
+
+void
+History::save(std::string entry)
+{
+    std::ofstream outFile { Util::getFileFromHome(m_historyFile) };
+    std::copy (m_elements.cbegin(), m_elements.cend(), 
+            std::ostream_iterator<std::string>(outFile, "\n"));
+}

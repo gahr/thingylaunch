@@ -26,19 +26,21 @@
 #ifndef COMPLETION_H
 #define COMPLETION_H
 
-#include <limits.h>
+#include <string>
+#include <utility>
+#include <vector>
 
-#define MAX_CMD_LEN 256
-#define XSTRING(x) STRING(x)
-#define STRING(x) #x
-
-typedef struct comp_ * comp_t;
-
-comp_t comp_init(void);
-char * comp_next(comp_t, char *);
-void   comp_reset(comp_t);
-void   comp_dump(comp_t);
-void   comp_cleanup(comp_t);
-
+class Completion {
+    public:
+        Completion();
+        ~Completion();
+        std::string next(std::string command);
+        void reset();
+        
+    private:
+        std::string m_prefix;
+        std::vector<std::string> m_elements;
+        std::vector<std::string>::iterator m_iter;
+};
 
 #endif /* !COMPLETION_H */
