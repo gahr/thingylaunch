@@ -26,6 +26,7 @@
 #include <cstdlib> // getenv
 #include <fstream>
 #include <iostream>
+#include <iterator>
 
 #include "history.h"
 #include "util.h"
@@ -35,7 +36,6 @@ History::History()
 {
     std::ifstream inFile { Util::getFileFromHome(m_historyFile) };
     std::string line;
-    int i { 0 };
 
     while (inFile.good()) {
         std::getline(inFile, line);
