@@ -23,7 +23,6 @@
   SUCH DAMAGE.
   */
 
-#include <cstdlib> // getenv
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -32,9 +31,9 @@
 #include "util.h"
 
 History::History()
-    : m_historyFile { ".thingylaunch.history" }
+    : m_historyFile { Util::getEnv("HOME") + "/.thingylaunch.history" }
 {
-    std::ifstream inFile { Util::getFileFromHome(m_historyFile) };
+    std::ifstream inFile { m_historyFile };
     std::string line;
 
     while (inFile.good()) {
@@ -87,7 +86,8 @@ History::prev()
 void
 History::save(std::string entry)
 {
-    std::ofstream outFile { Util::getFileFromHome(m_historyFile) };
+    std::ofstream outFile { m_historyFile };
     std::copy (m_elements.cbegin(), m_elements.cend(), 
             std::ostream_iterator<std::string>(outFile, "\n"));
+    outFile << entry;
 }

@@ -23,19 +23,18 @@
   SUCH DAMAGE.
 */
 
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
 
 #include <algorithm>
-#include <cstdlib> // getenv
 #include <iostream>
 #include <stdexcept>
 #include <sstream>
 
 #include "completion.h"
+#include "util.h"
 
 Completion::Completion()
 {
@@ -44,11 +43,7 @@ Completion::Completion()
     gid_t gid { getgid() };
 
     /* get PATH env */
-    const char * p { getenv("PATH") };
-    if (p == nullptr) {
-        throw std::runtime_error { "Could not find PATH environment variable." };
-    }
-    std::string path { p };
+    std::string path { Util::getEnv("PATH") };
 
     /* tokenize path */
     std::string elem;
