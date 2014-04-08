@@ -1,3 +1,6 @@
+2014-04-08 - 1.2.2
+* Fix a bug where an uninitialized XColor struct could cause a segfault on some systems (Emanuel Haupt)
+
 2014-04-08 - 1.2.1
 * Add some missing #include (Emanuel Haupt)
 * Optimize the option parsing code

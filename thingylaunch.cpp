@@ -205,10 +205,10 @@ Thingylaunch::parseOptions(int argc, char **argv)
 unsigned long
 Thingylaunch::parseColorName(std::string colorName)
 {
-    XColor tmp;
-	XParseColor(m_display, DefaultColormap(m_display, m_screenNum), colorName.c_str(), &tmp);
-	XAllocColor(m_display, DefaultColormap(m_display, m_screenNum), &tmp);
-	return tmp.pixel;
+    XColor tmp { 0 };
+    XParseColor(m_display, DefaultColormap(m_display, m_screenNum), colorName.c_str(), &tmp);
+    XAllocColor(m_display, DefaultColormap(m_display, m_screenNum), &tmp);
+    return tmp.pixel;
 }
 
 void
