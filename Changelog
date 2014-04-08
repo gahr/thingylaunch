@@ -1,3 +1,8 @@
+2014-04-08 - 1.2.1
+* Add some missing #include (Emanuel Haupt)
+* Optimize the option parsing code
+* Remove unused variable
+
 2014-04-08 - 1.2.0
 * Simplify the code by rewriting the whole thing in C++
 * Implement the -fg (foreground color) and -bg (background color) options

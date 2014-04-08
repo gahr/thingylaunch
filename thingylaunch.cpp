@@ -27,10 +27,11 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/keysymdef.h>
-#include <unistd.h>
-#include <time.h>
 #include <libgen.h>
+#include <time.h>
+#include <unistd.h>
 
+#include <cstdlib> // getenv
 #include <iostream>
 
 #include "completion.h"
@@ -91,7 +92,7 @@ Thingylaunch::Thingylaunch()
 
 Thingylaunch::~Thingylaunch()
 {
-    std::cout << "destructing my object" << std::endl;
+    // nothing to do...
 }
 
 void
@@ -186,6 +187,7 @@ Thingylaunch::parseOptions(int argc, char **argv)
                 die("not enough parameters given");
             }
             m_bgColor = parseColorName(*(i+1));
+            ++i;
             continue;
         }
 
@@ -194,6 +196,7 @@ Thingylaunch::parseOptions(int argc, char **argv)
                 die("not enough parameters given");
             }
             m_fgColor = parseColorName(*(i+1));
+            ++i;
             continue;
         }
     }

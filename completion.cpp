@@ -29,6 +29,8 @@
 #include <dirent.h>
 #include <unistd.h>
 
+#include <algorithm>
+#include <cstdlib> // getenv
 #include <iostream>
 #include <stdexcept>
 #include <sstream>
