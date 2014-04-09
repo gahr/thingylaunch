@@ -196,7 +196,7 @@ Thingylaunch::createWindow()
 
     /* create the window */
     uint32_t mask { XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK };
-    uint32_t value[] { XCB_NONE, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_RELEASE };
+    uint32_t value[] { 1, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_RELEASE };
     m_win = xcb_generate_id(m_connection);
     auto createCookie = xcb_create_window_checked(m_connection, XCB_COPY_FROM_PARENT, m_win, m_screen->root,
             left, top, WindowWidth, WindowHeight, 10, 0, m_screen->root_visual, mask, value);
@@ -312,8 +312,6 @@ Thingylaunch::eventLoop()
         }
         free(e);
     }
-
-    die("waiting for an event");
 }
 
 xcb_query_text_extents_reply_t *
