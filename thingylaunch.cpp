@@ -62,8 +62,8 @@ class Thingylaunch {
         void execcmd();
         void die(std::string msg);
 
-        uint32_t parseColorName(std::string s);
-        xcb_query_text_extents_reply_t * getTextExtent(std::string s, int len);
+        uint32_t parseColorName(const std::string& s);
+        xcb_query_text_extents_reply_t * getTextExtent(const std::string& s, int len);
 
     private:
 
@@ -105,14 +105,11 @@ Thingylaunch::Thingylaunch()
 
 Thingylaunch::~Thingylaunch()
 {
-#if 0
-    XFreeFont(m_display, m_fontInfo);
-    XFreeGC(m_display, m_fgGc);
-    XFreeGC(m_display, m_bgGc);
-    XUngrabKeyboard(m_display, CurrentTime);
-    XDestroyWindow(m_display, m_win);
-#endif
-
+    free(m_keysyms);
+    xcb_close_font(m_connection, m_font);
+    xcb_free_gc(m_connection, m_fgGc);
+    xcb_free_gc(m_connection, m_bgGc);
+    xcb_destroy_window(m_connection, m_win);
     xcb_disconnect(m_connection);
 }
 
@@ -198,16 +195,11 @@ Thingylaunch::createWindow()
     int left { m_screen->width_in_pixels / 2 - WindowWidth / 2 };
 
     /* create the window */
-    uint32_t mask { XCB_CW_EVENT_MASK };
-    uint32_t value[] = { XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_RELEASE };
-
+    uint32_t mask { XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK };
+    uint32_t value[] { XCB_NONE, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_RELEASE };
     m_win = xcb_generate_id(m_connection);
-    auto cookie = xcb_create_window_checked(m_connection, XCB_COPY_FROM_PARENT, m_win, m_screen->root,
-            left, top, WindowWidth, WindowHeight, 10, 0,
-            m_screen->root_visual, mask, value);
-    if (xcb_request_check(m_connection, cookie)) {
-        die("Couldn't create window");
-    }
+    auto createCookie = xcb_create_window_checked(m_connection, XCB_COPY_FROM_PARENT, m_win, m_screen->root,
+            left, top, WindowWidth, WindowHeight, 10, 0, m_screen->root_visual, mask, value);
 
     /* set wm hints */
     xcb_size_hints_t hints;
@@ -220,16 +212,19 @@ Thingylaunch::createWindow()
     xcb_icccm_set_wm_normal_hints_checked(m_connection, m_win, &hints);
 
     /* map the window */
-    cookie = xcb_map_window_checked(m_connection, m_win);
-    if (xcb_request_check(m_connection, cookie)) {
-        die("Couldn't map window");
+    auto mapCookie = xcb_map_window_checked(m_connection, m_win);
+
+    if (xcb_request_check(m_connection, createCookie)) {
+        die("Couldn't create window");
     }
 
-    xcb_flush(m_connection);
+    if (xcb_request_check(m_connection, mapCookie)) {
+        die("Couldn't map window");
+    }
 }
 
 uint32_t
-Thingylaunch::parseColorName(std::string colorName)
+Thingylaunch::parseColorName(const std::string& colorName)
 {
      auto lc = xcb_lookup_color(m_connection, m_screen->default_colormap, colorName.size(), colorName.c_str());
      auto lr = xcb_lookup_color_reply(m_connection, lc, NULL);
@@ -249,8 +244,8 @@ Thingylaunch::setupGC()
 {
     /* open font */
     m_font = xcb_generate_id(m_connection);
-    auto cookie = xcb_open_font_checked(m_connection, m_font, m_fontName.size(), m_fontName.c_str());
-    if (xcb_request_check(m_connection, cookie)) {
+    auto fontCookie = xcb_open_font_checked(m_connection, m_font, m_fontName.size(), m_fontName.c_str());
+    if (xcb_request_check(m_connection, fontCookie)) {
         die("Couldn't open font");
     }
 
@@ -262,17 +257,18 @@ Thingylaunch::setupGC()
     uint32_t gcMask { XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_LINE_WIDTH | XCB_GC_LINE_STYLE | XCB_GC_CAP_STYLE | XCB_GC_JOIN_STYLE | XCB_GC_FONT };
     uint32_t gcValues[] { fgColor, bgColor, 1, XCB_LINE_STYLE_SOLID, XCB_CAP_STYLE_BUTT, XCB_JOIN_STYLE_BEVEL, m_font };
     m_fgGc = xcb_generate_id(m_connection);
-    cookie = xcb_create_gc_checked(m_connection, m_fgGc, m_win, gcMask, gcValues);
-    if (xcb_request_check(m_connection, cookie)) {
-        die("Couldn't create GC");
-    }
+    auto fgGcCookie = xcb_create_gc_checked(m_connection, m_fgGc, m_win, gcMask, gcValues);
 
     /* create rectangle gc */
     uint32_t rectgcMask { XCB_GC_FOREGROUND | XCB_GC_BACKGROUND };
     uint32_t rectgcValues[] { bgColor, bgColor };
     m_bgGc = xcb_generate_id(m_connection);
-    cookie = xcb_create_gc_checked(m_connection, m_bgGc, m_win, rectgcMask, rectgcValues);
-    if (xcb_request_check(m_connection, cookie)) {
+    auto bgGcCookie = xcb_create_gc_checked(m_connection, m_bgGc, m_win, rectgcMask, rectgcValues);
+
+    if (xcb_request_check(m_connection, fgGcCookie)) {
+        die("Couldn't create GC");
+    }
+    if (xcb_request_check(m_connection, bgGcCookie)) {
         die("Couldn't create GC");
     }
 }
@@ -307,18 +303,23 @@ Thingylaunch::eventLoop()
             case XCB_KEY_RELEASE:
                 ev = reinterpret_cast<xcb_key_release_event_t *>(e);
                 if (keyrelease(ev)) {
+                    free(e);
                     return;
                 }
                 break;
             default:
                 break;
         }
+        free(e);
     }
+
+    die("waiting for an event");
 }
 
 xcb_query_text_extents_reply_t *
-Thingylaunch::getTextExtent(std::string s, int len)
+Thingylaunch::getTextExtent(const std::string& s, int len)
 {
+    std::cout << s << " (" << len << ")" << std::endl;
     xcb_char2b_t chars[len];
     for (int i = 0; i < len; ++i) {
         chars[i].byte1 = 0;
@@ -336,26 +337,43 @@ Thingylaunch::redraw()
 {
     /* draw the background rectangle */
     xcb_rectangle_t extRect { 0, 0, WindowWidth, WindowHeight };
-    xcb_poly_fill_rectangle(m_connection, m_win, m_bgGc, 1, &extRect);
+    auto bgCookie = xcb_poly_fill_rectangle_checked(m_connection, m_win, m_bgGc, 1, &extRect);
 
     /* draw the foreground rectangle */
     xcb_rectangle_t intRect { 0, 0, WindowWidth-1, WindowHeight-1 };
-    xcb_poly_rectangle(m_connection, m_win, m_fgGc, 1, &intRect);
+    auto fgCookie = xcb_poly_rectangle_checked(m_connection, m_win, m_fgGc, 1, &intRect);
 
     /* get text size */
     auto wholeExt = getTextExtent(m_command, m_command.size());
     auto partialExt = getTextExtent(m_command, m_cursorPos - m_command.begin());
 
     /* draw the text */
+    auto txtCookie = xcb_image_text_8_checked(m_connection, m_command.size(), m_win, m_fgGc, 2,
+        wholeExt->font_ascent + wholeExt->font_descent + 2, m_command.c_str());
+
+    /* draw the cursor */
     int16_t cursorLeft = partialExt->overall_width + 2;
     xcb_rectangle_t curRect = { cursorLeft, 2, 2, 20 };
-    xcb_image_text_8(m_connection, m_command.size(), m_win, m_fgGc, 2, wholeExt->font_ascent + wholeExt->font_descent + 2, m_command.c_str());
-    xcb_poly_fill_rectangle(m_connection, m_win, m_fgGc, 1, &curRect);
+    auto curCookie = xcb_poly_fill_rectangle_checked(m_connection, m_win, m_fgGc, 1, &curRect);
 
     free(wholeExt);
     free(partialExt);
 
+    if (xcb_request_check(m_connection, bgCookie)) {
+        die("Couldn't draw");
+    }
+    if (xcb_request_check(m_connection, fgCookie)) {
+        die("Couldn't draw");
+    }
+    if (xcb_request_check(m_connection, txtCookie)) {
+        die("Couldn't draw");
+    }
+    if (xcb_request_check(m_connection, curCookie)) {
+        die("Couldn't draw");
+    }
+
     xcb_flush(m_connection);
+
 }
 
 bool
@@ -388,13 +406,13 @@ Thingylaunch::keyrelease(xcb_key_release_event_t * keyevent)
         case XK_Left:
         case XK_KP_Left:
             if (m_cursorPos != m_command.begin())
-                m_cursorPos--;
+                --m_cursorPos;
             break;
 
         case XK_Right:
         case XK_KP_Right:
             if (m_cursorPos < m_command.end())
-                m_cursorPos++;
+                ++m_cursorPos;
             break;
 
         case XK_Up:
