@@ -1,28 +1,28 @@
 /*-
-  Copyright (C) 2003      Matt Johnston <matt@ucc.asn.au>
-  Copyright (C) 2009-2014 Pietro Cerutti <gahr@gahr.ch>
-
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions
-  are met:
-  1. Redistributions of source code must retain the above copyright
-  notice, this list of conditions and the following disclaimer.
-  2. Redistributions in binary form must reproduce the above copyright
-  notice, this list of conditions and the following disclaimer in the
-  documentation and/or other materials provided with the distribution.
-
-  THIS SOFTWARE IS PROVIDED BY AUTHOR AND CONTRIBUTORS ``AS IS'' AND
-  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-  ARE DISCLAIMED.  IN NO EVENT SHALL AUTHOR OR CONTRIBUTORS BE LIABLE
-  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-  OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-  SUCH DAMAGE.
-  */
+ * Copyright (C) 2003      Matt Johnston <matt@ucc.asn.au>
+ * Copyright (C) 2009-2014 Pietro Cerutti <gahr@gahr.ch>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -71,6 +71,7 @@ class Thingylaunch {
         GC            m_gc;
         GC            m_rectgc;
         Window        m_win;
+        std::string   m_fontName;
         XFontStruct * m_fontInfo;
         int           m_screenNum;
         unsigned long m_bgColor;
@@ -93,7 +94,12 @@ Thingylaunch::Thingylaunch()
 
 Thingylaunch::~Thingylaunch()
 {
-    // nothing to do...
+    XFreeFont(m_display, m_fontInfo);
+    XFreeGC(m_display, m_gc);
+    XFreeGC(m_display, m_rectgc);
+    XUngrabKeyboard(m_display, CurrentTime);
+    XDestroyWindow(m_display, m_win);
+    XCloseDisplay(m_display);
 }
 
 void
@@ -171,6 +177,7 @@ Thingylaunch::setupDefaults()
 {
     m_bgColor = BlackPixel(m_display, m_screenNum);
     m_fgColor = WhitePixel(m_display, m_screenNum);
+    m_fontName = "-misc-*-medium-r-*-*-15-*-*-*-*-*-*-*";
 }
 
 void
@@ -201,6 +208,15 @@ Thingylaunch::parseOptions(int argc, char **argv)
             ++i;
             continue;
         }
+
+        if (s == "-fn") {
+            if (i+1 == args.end()) {
+                die("not enough parameters given");
+            }
+            m_fontName = *(i+1);
+            ++i;
+            continue;
+        }
     }
 }
 
@@ -228,7 +244,7 @@ Thingylaunch::setupGC()
     XSetForeground(m_display, m_gc, m_fgColor);
     XSetBackground(m_display, m_gc, m_bgColor);
     XSetLineAttributes(m_display, m_gc, line_width, line_style, cap_style, join_style);
-    if ((m_fontInfo = XLoadQueryFont(m_display, "-misc-*-medium-r-*-*-15-*-*-*-*-*-*-*")) == nullptr) {
+    if ((m_fontInfo = XLoadQueryFont(m_display, m_fontName.c_str())) == nullptr) {
         die("couldn't load font");
     }
     XSetFont(m_display, m_gc, m_fontInfo->fid);
@@ -431,9 +447,6 @@ Thingylaunch::keypress(XKeyEvent * keyevent)
 void
 Thingylaunch::execcmd()
 {
-    XUngrabKeyboard(m_display, CurrentTime);
-    XDestroyWindow(m_display, m_win);
-
     if (fork()) {
         return;
     }
