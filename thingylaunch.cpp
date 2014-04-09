@@ -24,9 +24,13 @@
  * SUCH DAMAGE.
  */
 
-#include <X11/Xlib.h>
+#include <xcb/xcb.h>
+#include <xcb/xcb_icccm.h>
+#include <xcb/xcb_keysyms.h>
+#include <xcb/xproto.h>
 #include <X11/Xutil.h>
 #include <X11/keysymdef.h>
+
 #include <libgen.h>
 #include <time.h>
 #include <unistd.h>
@@ -38,10 +42,8 @@
 #include "bookmark.h"
 #include "util.h"
 
-#define WINWIDTH 640
-#define WINHEIGHT 25
-
 class Thingylaunch {
+
 
     public:
         Thingylaunch();
@@ -50,32 +52,34 @@ class Thingylaunch {
         void run(int argc, char **argv);
 
     private:
-        void openDisplay();
+        void readOptions(int argc, char **argv);
         void createWindow();
-        void setupDefaults();
-        void parseOptions(int argc, char **argv);
         void setupGC();
         void eventLoop();
         void grabHack();
         void redraw();
-        bool keypress(XKeyEvent * keyevent);
+        bool keyrelease(xcb_key_release_event_t * keyevent);
         void execcmd();
         void die(std::string msg);
 
-        unsigned long parseColorName(std::string s);
+        uint32_t parseColorName(std::string s);
+        xcb_query_text_extents_reply_t * getTextExtent(std::string s, int len);
 
     private:
+
         /* X11 */
-        std::string   m_displayName;
-        Display     * m_display;
-        GC            m_gc;
-        GC            m_rectgc;
-        Window        m_win;
-        std::string   m_fontName;
-        XFontStruct * m_fontInfo;
-        int           m_screenNum;
-        unsigned long m_bgColor;
-        unsigned long m_fgColor;
+        xcb_connection_t  * m_connection;
+        xcb_screen_t      * m_screen;
+        xcb_window_t        m_win;
+        xcb_key_symbols_t * m_keysyms;
+        xcb_font_t          m_font;
+        xcb_gcontext_t      m_fgGc;
+        xcb_gcontext_t      m_bgGc;
+
+        /* User-defined options */
+        std::string m_fgColorName;
+        std::string m_bgColorName;
+        std::string m_fontName;
 
         /* Completion, history, and bookmarks */
         Completion m_comp;
@@ -85,31 +89,39 @@ class Thingylaunch {
         /* The command */
         std::string           m_command;
         std::string::iterator m_cursorPos;
+
+        /* The window size */
+        static constexpr uint16_t  WindowWidth { 640 };
+        static constexpr uint16_t  WindowHeight { 25 };
 };
 
 Thingylaunch::Thingylaunch()
+    : m_fgColorName { "black" },
+      m_bgColorName { "white" },
+      m_fontName { "-misc-*-medium-r-*-*-15-*-*-*-*-*-*-*" }
 {
     m_cursorPos = m_command.end();
 }
 
 Thingylaunch::~Thingylaunch()
 {
+#if 0
     XFreeFont(m_display, m_fontInfo);
-    XFreeGC(m_display, m_gc);
-    XFreeGC(m_display, m_rectgc);
+    XFreeGC(m_display, m_fgGc);
+    XFreeGC(m_display, m_bgGc);
     XUngrabKeyboard(m_display, CurrentTime);
     XDestroyWindow(m_display, m_win);
-    XCloseDisplay(m_display);
+#endif
+
+    xcb_disconnect(m_connection);
 }
 
 void
 Thingylaunch::run(int argc, char **argv)
 {
-    openDisplay();
-    createWindow();
+    readOptions(argc, argv);
 
-    setupDefaults();
-    parseOptions(argc, argv);
+    createWindow();
 
     setupGC();
 
@@ -127,61 +139,7 @@ main(int argc, char **argv)
 }
 
 void
-Thingylaunch::openDisplay()
-{
-    try {
-        m_displayName = Util::getEnv("DISPLAY");
-    } catch (std::runtime_error& e) {
-        die(e.what());
-    }
-
-    m_display = XOpenDisplay(m_displayName.c_str());
-    if (m_display == NULL) {
-        die("Couldn't connect to DISPLAY");
-    }
-
-    m_screenNum = DefaultScreen(m_display);
-}
-
-void
-Thingylaunch::createWindow()
-{
-
-    /* figure out the window location */
-    int top { DisplayHeight(m_display, m_screenNum) / 2 - WINHEIGHT / 2 };
-    int left { DisplayWidth(m_display, m_screenNum) / 2 - WINWIDTH / 2 };
-
-    /* create the window */
-    XSetWindowAttributes attrib;
-    attrib.override_redirect = True;
-    m_win = XCreateWindow(m_display, RootWindow(m_display, m_screenNum), left, top, WINWIDTH, WINHEIGHT, 0,
-                CopyFromParent, InputOutput, CopyFromParent, CWOverrideRedirect, &attrib);
-
-    /* set up the window hints etc */
-    XSizeHints * win_size_hints = XAllocSizeHints();
-    if (!win_size_hints) {
-        die("out of memory allocating hints");
-    }
-    win_size_hints->flags = PMaxSize | PMinSize;
-    win_size_hints->min_width = win_size_hints->max_width = WINWIDTH;
-    win_size_hints->min_height = win_size_hints->max_height = WINHEIGHT;
-    XSetWMNormalHints(m_display, m_win, win_size_hints);
-    XFree(win_size_hints);
-
-    /* map the window */
-    XMapWindow(m_display, m_win);
-}
-
-void
-Thingylaunch::setupDefaults()
-{
-    m_bgColor = BlackPixel(m_display, m_screenNum);
-    m_fgColor = WhitePixel(m_display, m_screenNum);
-    m_fontName = "-misc-*-medium-r-*-*-15-*-*-*-*-*-*-*";
-}
-
-void
-Thingylaunch::parseOptions(int argc, char **argv)
+Thingylaunch::readOptions(int argc, char **argv)
 {
     std::vector<std::string> args;
     std::copy(argv+1, argv+argc, std::back_inserter(args));
@@ -195,7 +153,7 @@ Thingylaunch::parseOptions(int argc, char **argv)
             if (i+1 == args.end()) {
                 die("not enough parameters given");
             }
-            m_bgColor = parseColorName(*(i+1));
+            m_bgColorName = *(i+1);
             ++i;
             continue;
         }
@@ -204,7 +162,7 @@ Thingylaunch::parseOptions(int argc, char **argv)
             if (i+1 == args.end()) {
                 die("not enough parameters given");
             }
-            m_fgColor = parseColorName(*(i+1));
+            m_fgColorName = *(i+1);
             ++i;
             continue;
         }
@@ -220,84 +178,135 @@ Thingylaunch::parseOptions(int argc, char **argv)
     }
 }
 
-unsigned long
+void
+Thingylaunch::createWindow()
+{
+    /* open connection to the display server */
+    if ((m_connection = xcb_connect(NULL, NULL)) == nullptr) {
+        die("Couldn't connect to X11 server");
+    }
+    m_screen = xcb_setup_roots_iterator(xcb_get_setup(m_connection)).data;
+
+    /* allocate keysyms */
+    m_keysyms = xcb_key_symbols_alloc(m_connection);
+    if (m_keysyms == nullptr) {
+        die("Couldn't allocate key symbols");
+    }
+
+    /* figure out the window location */
+    int top { m_screen->height_in_pixels / 2 - WindowHeight / 2 };
+    int left { m_screen->width_in_pixels / 2 - WindowWidth / 2 };
+
+    /* create the window */
+    uint32_t mask { XCB_CW_EVENT_MASK };
+    uint32_t value[] = { XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_RELEASE };
+
+    m_win = xcb_generate_id(m_connection);
+    auto cookie = xcb_create_window_checked(m_connection, XCB_COPY_FROM_PARENT, m_win, m_screen->root,
+            left, top, WindowWidth, WindowHeight, 10, 0,
+            m_screen->root_visual, mask, value);
+    if (xcb_request_check(m_connection, cookie)) {
+        die("Couldn't create window");
+    }
+
+    /* set wm hints */
+    xcb_size_hints_t hints;
+    hints.flags = XCB_ICCCM_SIZE_HINT_P_SIZE | XCB_ICCCM_SIZE_HINT_P_POSITION | XCB_ICCCM_SIZE_HINT_P_SIZE | 
+                  XCB_ICCCM_SIZE_HINT_P_MIN_SIZE | XCB_ICCCM_SIZE_HINT_P_MAX_SIZE;
+    hints.x = top;
+    hints.y = left;
+    hints.min_width = hints.max_width = WindowWidth;
+    hints.min_height = hints.max_height = WindowHeight;
+    xcb_icccm_set_wm_normal_hints_checked(m_connection, m_win, &hints);
+
+    /* map the window */
+    cookie = xcb_map_window_checked(m_connection, m_win);
+    if (xcb_request_check(m_connection, cookie)) {
+        die("Couldn't map window");
+    }
+
+    xcb_flush(m_connection);
+}
+
+uint32_t
 Thingylaunch::parseColorName(std::string colorName)
 {
-    XColor tmp { 0 };
-    XParseColor(m_display, DefaultColormap(m_display, m_screenNum), colorName.c_str(), &tmp);
-    XAllocColor(m_display, DefaultColormap(m_display, m_screenNum), &tmp);
-    return tmp.pixel;
+     auto lc = xcb_lookup_color(m_connection, m_screen->default_colormap, colorName.size(), colorName.c_str());
+     auto lr = xcb_lookup_color_reply(m_connection, lc, NULL);
+     auto ac = xcb_alloc_color(m_connection, m_screen->default_colormap, lr->exact_red, lr->exact_green, lr->exact_blue);
+     auto ar = xcb_alloc_color_reply(m_connection, ac, NULL);
+
+     uint32_t color { ar->pixel };
+
+     free(lr);
+     free(ar);
+
+     return color;
 }
 
 void
 Thingylaunch::setupGC()
 {
-    int valuemask { 0 };
-    int line_width { 1 };
-    int line_style { LineSolid };
-    int cap_style { CapButt };
-    int join_style { JoinBevel };
-    XGCValues values;
-
-    /* GC for text */
-    m_gc = XCreateGC(m_display, m_win, valuemask, &values);
-    XSetForeground(m_display, m_gc, m_fgColor);
-    XSetBackground(m_display, m_gc, m_bgColor);
-    XSetLineAttributes(m_display, m_gc, line_width, line_style, cap_style, join_style);
-    if ((m_fontInfo = XLoadQueryFont(m_display, m_fontName.c_str())) == nullptr) {
-        die("couldn't load font");
+    /* open font */
+    m_font = xcb_generate_id(m_connection);
+    auto cookie = xcb_open_font_checked(m_connection, m_font, m_fontName.size(), m_fontName.c_str());
+    if (xcb_request_check(m_connection, cookie)) {
+        die("Couldn't open font");
     }
-    XSetFont(m_display, m_gc, m_fontInfo->fid);
 
-    /* GC for rectangle */
-    m_rectgc = XCreateGC(m_display, m_win, valuemask, &values);
-    XSetForeground(m_display, m_rectgc, m_bgColor);
-    XSetBackground(m_display, m_rectgc, m_bgColor);
+    /* resolve colors */
+    auto bgColor = parseColorName(m_bgColorName);
+    auto fgColor = parseColorName(m_fgColorName);
+
+    /* create gc */
+    uint32_t gcMask { XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_LINE_WIDTH | XCB_GC_LINE_STYLE | XCB_GC_CAP_STYLE | XCB_GC_JOIN_STYLE | XCB_GC_FONT };
+    uint32_t gcValues[] { fgColor, bgColor, 1, XCB_LINE_STYLE_SOLID, XCB_CAP_STYLE_BUTT, XCB_JOIN_STYLE_BEVEL, m_font };
+    m_fgGc = xcb_generate_id(m_connection);
+    cookie = xcb_create_gc_checked(m_connection, m_fgGc, m_win, gcMask, gcValues);
+    if (xcb_request_check(m_connection, cookie)) {
+        die("Couldn't create GC");
+    }
+
+    /* create rectangle gc */
+    uint32_t rectgcMask { XCB_GC_FOREGROUND | XCB_GC_BACKGROUND };
+    uint32_t rectgcValues[] { bgColor, bgColor };
+    m_bgGc = xcb_generate_id(m_connection);
+    cookie = xcb_create_gc_checked(m_connection, m_bgGc, m_win, rectgcMask, rectgcValues);
+    if (xcb_request_check(m_connection, cookie)) {
+        die("Couldn't create GC");
+    }
 }
 
 void
 Thingylaunch::grabHack()
 {
-#if 1
-    struct timespec req;
-    req.tv_sec = 0;
-    req.tv_nsec = 5000000;
-    unsigned long maxwait { 3000000000UL }; /* 3 seconds */
-    unsigned int i;
+    auto cookie = xcb_grab_keyboard(m_connection, 1, m_win, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    auto reply = xcb_grab_keyboard_reply(m_connection, cookie, NULL);
 
-    redraw();
-
-    /* this loop is required since pwm grabs the keyboard during the event loop */
-    for (i = 0; i < (maxwait / req.tv_nsec); i++) {
-        nanosleep(&req, NULL);
-        if (XGrabKeyboard(m_display, m_win, False, GrabModeAsync, GrabModeAsync, CurrentTime) == 0) {
-            return;
-        }
+    if (reply && reply->status == XCB_GRAB_STATUS_SUCCESS) {
+        free(reply);
+        return;
     }
 
-    die("Couldn't grab keyboard");
-#else
-    XSetInputFocus(m_display, m_win, RevertToParent, CurrentTime);
-#endif
+    xcb_set_input_focus(m_connection, XCB_INPUT_FOCUS_PARENT, m_win, XCB_CURRENT_TIME);
 }
 
 void
 Thingylaunch::eventLoop()
 {
-    XEvent e;
-
+    xcb_generic_event_t * e;
+    xcb_key_release_event_t * ev;
+    
     redraw();
 
-    XSelectInput(m_display, m_win, ExposureMask | KeyPressMask);
-
-    for (;;) {
-        XNextEvent(m_display, &e);
-        switch(e.type) {
-            case Expose:
+    while ((e = xcb_wait_for_event(m_connection))) {
+        switch (e->response_type & ~0x80) {
+            case XCB_EXPOSE:
                 redraw();
                 break;
-            case KeyPress:
-                if (keypress(&e.xkey)) {
+            case XCB_KEY_RELEASE:
+                ev = reinterpret_cast<xcb_key_release_event_t *>(e);
+                if (keyrelease(ev)) {
                     return;
                 }
                 break;
@@ -307,38 +316,65 @@ Thingylaunch::eventLoop()
     }
 }
 
+xcb_query_text_extents_reply_t *
+Thingylaunch::getTextExtent(std::string s, int len)
+{
+    xcb_char2b_t chars[len];
+    for (int i = 0; i < len; ++i) {
+        chars[i].byte1 = 0;
+        chars[i].byte2 = s[i];
+    }
+
+    auto cookie = xcb_query_text_extents(m_connection, m_font, len, chars);
+    auto reply = xcb_query_text_extents_reply(m_connection, cookie, NULL);
+
+    return reply;
+}
+
 void
 Thingylaunch::redraw()
 {
-    int font_height { m_fontInfo->ascent + m_fontInfo->descent };
-    int cursorLeft { XTextWidth(m_fontInfo, m_command.c_str(), m_cursorPos - m_command.begin()) };
+    /* draw the background rectangle */
+    xcb_rectangle_t extRect { 0, 0, WindowWidth, WindowHeight };
+    xcb_poly_fill_rectangle(m_connection, m_win, m_bgGc, 1, &extRect);
 
-    XFillRectangle(m_display, m_win, m_rectgc, 0, 0, WINWIDTH, WINHEIGHT);
-    XDrawRectangle(m_display, m_win, m_gc, 0, 0, WINWIDTH-1, WINHEIGHT-1);
-    XDrawString(m_display, m_win, m_gc, 2, font_height + 2, m_command.c_str(), m_command.size());
-    XDrawLine(m_display, m_win, m_gc, 2 + cursorLeft, font_height + 4, 2 + cursorLeft + 10, font_height + 4);
-    XFlush(m_display);
+    /* draw the foreground rectangle */
+    xcb_rectangle_t intRect { 0, 0, WindowWidth-1, WindowHeight-1 };
+    xcb_poly_rectangle(m_connection, m_win, m_fgGc, 1, &intRect);
+
+    /* get text size */
+    auto wholeExt = getTextExtent(m_command, m_command.size());
+    auto partialExt = getTextExtent(m_command, m_cursorPos - m_command.begin());
+
+    /* draw the text */
+    int16_t cursorLeft = partialExt->overall_width + 2;
+    xcb_rectangle_t curRect = { cursorLeft, 2, 2, 20 };
+    xcb_image_text_8(m_connection, m_command.size(), m_win, m_fgGc, 2, wholeExt->font_ascent + wholeExt->font_descent + 2, m_command.c_str());
+    xcb_poly_fill_rectangle(m_connection, m_win, m_fgGc, 1, &curRect);
+
+    free(wholeExt);
+    free(partialExt);
+
+    xcb_flush(m_connection);
 }
 
 bool
-Thingylaunch::keypress(XKeyEvent * keyevent)
+Thingylaunch::keyrelease(xcb_key_release_event_t * keyevent)
 {
-    char charPressed;
-    KeySym key_symbol;
-
-    XLookupString(keyevent, &charPressed, 1, &key_symbol, NULL);
+    auto charPressed = xcb_key_symbols_get_keysym(m_keysyms, keyevent->detail, 0);
 
     /* check for an Alt-key meaning bookmark lookup */
     if (keyevent->state & Mod1Mask) {
-        m_command = m_book.lookup(charPressed);
-        if (!m_command.empty()) {
+        std::string book = m_book.lookup(charPressed);
+        if (!book.empty()) {
+            m_command = std::move(book);
             m_hist.save(m_command);
             execcmd();
             return true;
         }
     }
 
-    switch(key_symbol) {
+    switch(charPressed) {
         case XK_Escape:
             exit(0);
             break;
@@ -400,7 +436,7 @@ Thingylaunch::keypress(XKeyEvent * keyevent)
                 m_comp.reset();
                 m_command.clear();
                 m_cursorPos = m_command.begin();
-                key_symbol = 0; // don't handle the 'k' below
+                charPressed = 0; // don't handle the 'k' below
             }
             break;
 
@@ -420,7 +456,7 @@ Thingylaunch::keypress(XKeyEvent * keyevent)
                 m_command.erase(i, m_cursorPos);
 
                 m_cursorPos = i;
-                key_symbol = 0; // don't handle the 'w' below
+                charPressed = 0; // don't handle the 'w' below
             }
             break;
 
@@ -429,7 +465,7 @@ Thingylaunch::keypress(XKeyEvent * keyevent)
     }
 
     /* normal printable chars including Latin-[1-8] + Keybad numbers */
-    if ((key_symbol >= 0x20 && key_symbol <= 0x13be) || (key_symbol >= 0xffb0 && key_symbol <= 0xffb9)) {
+    if ((charPressed >= 0x20 && charPressed <= 0x13be) || (charPressed >= 0xffb0 && charPressed <= 0xffb9)) {
         /* if we're not appending, shift the following characters */
         if (m_cursorPos == m_command.end()) {
             m_command.push_back(charPressed);
@@ -459,7 +495,7 @@ Thingylaunch::execcmd()
     }
 
     const char * argv[4] { 0 };
-    argv[0] = basename(shell.c_str());
+    argv[0] = basename(const_cast<char *>(shell.c_str()));
     argv[1] = "-c";
     argv[2] = m_command.c_str();
     argv[3] = NULL;
