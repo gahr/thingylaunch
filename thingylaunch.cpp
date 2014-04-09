@@ -482,13 +482,16 @@ Thingylaunch::keyrelease(xcb_key_release_event_t * keyevent)
 
     /* normal printable chars including Latin-[1-8] + Keybad numbers */
     if ((charPressed >= 0x20 && charPressed <= 0x13be) || (charPressed >= 0xffb0 && charPressed <= 0xffb9)) {
-        /* if we're not appending, shift the following characters */
+        /* the m_cursorPos iterator might be invalidated
+         * because of a reallocation in m_command. Save
+         * its offset and restore it after the insertion */
+        int tmp = m_cursorPos - m_command.begin();
         if (m_cursorPos == m_command.end()) {
             m_command.push_back(charPressed);
         } else {
             m_command.insert(m_cursorPos, charPressed);
         }
-        ++m_cursorPos;
+        m_cursorPos = m_command.begin() + tmp + 1;
         m_comp.reset();
     }
 
