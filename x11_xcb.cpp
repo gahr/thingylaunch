@@ -110,7 +110,7 @@ X11XCB::createWindow(int width, int height)
     uint32_t value[] { 1, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS };
     m_win = xcb_generate_id(m_connection);
     auto createCookie = xcb_create_window_checked(m_connection, XCB_COPY_FROM_PARENT, m_win, m_screen->root,
-            left, top, width, height, 10, 0, m_screen->root_visual, mask, value);
+            left, top, width, height, 0, 0, m_screen->root_visual, mask, value);
 
     /* set wm hints */
     xcb_size_hints_t hints;
