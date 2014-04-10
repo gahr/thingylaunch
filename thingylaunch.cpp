@@ -32,10 +32,12 @@
 #include <X11/keysymdef.h>
 
 #include <libgen.h>
-#include <time.h>
 #include <unistd.h>
 
+#include <cctype>
 #include <iostream>
+#include <iterator>
+#include <sstream>
 
 #include "completion.h"
 #include "history.h"
@@ -58,10 +60,11 @@ class Thingylaunch {
         void eventLoop();
         void grabHack();
         void redraw();
-        bool keyrelease(xcb_key_release_event_t * keyevent);
+        bool keypress(xcb_key_press_event_t * keyevent);
         void execcmd();
         void die(std::string msg);
 
+        std::string parseFontDesc();
         uint32_t parseColorName(const std::string& s);
         xcb_query_text_extents_reply_t * getTextExtent(const std::string& s, int len);
 
@@ -79,7 +82,8 @@ class Thingylaunch {
         /* User-defined options */
         std::string m_fgColorName;
         std::string m_bgColorName;
-        std::string m_fontName;
+        std::string m_fontSize;
+        std::vector<std::string> m_fontDesc;
 
         /* Completion, history, and bookmarks */
         Completion m_comp;
@@ -87,21 +91,21 @@ class Thingylaunch {
         Bookmark   m_book;
 
         /* The command */
-        std::string           m_command;
-        std::string::iterator m_cursorPos;
+        std::string m_command;
+        std::string::size_type m_cursorPos;
 
         /* The window size */
-        static constexpr uint16_t  WindowWidth { 640 };
-        static constexpr uint16_t  WindowHeight { 25 };
+        static constexpr uint16_t WindowWidth { 640 };
+        static constexpr uint16_t WindowHeight { 25 };
 };
 
 Thingylaunch::Thingylaunch()
     : m_fgColorName { "black" },
       m_bgColorName { "white" },
-      m_fontName { "-misc-*-medium-r-*-*-15-*-*-*-*-*-*-*" }
-{
-    m_cursorPos = m_command.end();
-}
+      m_fontSize { "15" },
+      m_fontDesc { "*", "*", "medium", "r", "*", "*", "15", "*", "*", "*", "*", "*", "*", "*" },
+      m_cursorPos { 0 }
+{ }
 
 Thingylaunch::~Thingylaunch()
 {
@@ -138,39 +142,65 @@ main(int argc, char **argv)
 void
 Thingylaunch::readOptions(int argc, char **argv)
 {
+
+#define setParam(varName) { \
+    if (i+1 == args.end()) { \
+        die("not enough parameters given"); \
+    } \
+    (varName) = *(i+1); \
+    ++i; \
+    continue; \
+}
+
     std::vector<std::string> args;
     std::copy(argv+1, argv+argc, std::back_inserter(args));
 
     for (auto i = args.cbegin(); i != args.cend(); ++i) {
         const auto& s = *i;
 
-        /* handle options */
-
+        /* background color */
         if (s == "-bg") {
-            if (i+1 == args.end()) {
-                die("not enough parameters given");
-            }
-            m_bgColorName = *(i+1);
-            ++i;
-            continue;
+            setParam(m_bgColorName);
         }
 
+        /* foreground color */
         if (s == "-fg") {
-            if (i+1 == args.end()) {
-                die("not enough parameters given");
-            }
-            m_fgColorName = *(i+1);
-            ++i;
-            continue;
+            setParam(m_fgColorName);
         }
 
-        if (s == "-fn") {
-            if (i+1 == args.end()) {
-                die("not enough parameters given");
-            }
-            m_fontName = *(i+1);
-            ++i;
-            continue;
+        /* font foundry */
+        if (s == "-fo") {
+            setParam(m_fontDesc[0]);
+        }
+
+        /* font family */
+        if (s == "-ff") {
+            setParam(m_fontDesc[1]);
+        }
+
+        /* font weight */
+        if (s == "-fw") {
+            setParam(m_fontDesc[2]);
+        }
+
+        /* font slant */
+        if (s == "-fs") {
+            setParam(m_fontDesc[3]);
+        }
+
+        /* font width name */
+        if (s == "-fwn") {
+            setParam(m_fontDesc[4]);
+        }
+
+        /* font style name */
+        if (s == "-fsn") {
+            setParam(m_fontDesc[5]);
+        }
+
+        /* font point size */
+        if (s == "-fpt") {
+            setParam(m_fontDesc[6]); 
         }
     }
 }
@@ -196,7 +226,7 @@ Thingylaunch::createWindow()
 
     /* create the window */
     uint32_t mask { XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK };
-    uint32_t value[] { 1, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_RELEASE };
+    uint32_t value[] { 1, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS };
     m_win = xcb_generate_id(m_connection);
     auto createCookie = xcb_create_window_checked(m_connection, XCB_COPY_FROM_PARENT, m_win, m_screen->root,
             left, top, WindowWidth, WindowHeight, 10, 0, m_screen->root_visual, mask, value);
@@ -223,6 +253,15 @@ Thingylaunch::createWindow()
     }
 }
 
+std::string
+Thingylaunch::parseFontDesc()
+{
+    std::stringstream ss;
+    for (auto& i : m_fontDesc)
+        ss << "-" << i;
+    return ss.str();
+}
+
 uint32_t
 Thingylaunch::parseColorName(const std::string& colorName)
 {
@@ -243,8 +282,9 @@ void
 Thingylaunch::setupGC()
 {
     /* open font */
+    auto fontName = parseFontDesc();
     m_font = xcb_generate_id(m_connection);
-    auto fontCookie = xcb_open_font_checked(m_connection, m_font, m_fontName.size(), m_fontName.c_str());
+    auto fontCookie = xcb_open_font_checked(m_connection, m_font, fontName.size(), fontName.c_str());
     if (xcb_request_check(m_connection, fontCookie)) {
         die("Couldn't open font");
     }
@@ -291,7 +331,7 @@ void
 Thingylaunch::eventLoop()
 {
     xcb_generic_event_t * e;
-    xcb_key_release_event_t * ev;
+    xcb_key_press_event_t * ev;
     
     redraw();
 
@@ -300,9 +340,9 @@ Thingylaunch::eventLoop()
             case XCB_EXPOSE:
                 redraw();
                 break;
-            case XCB_KEY_RELEASE:
-                ev = reinterpret_cast<xcb_key_release_event_t *>(e);
-                if (keyrelease(ev)) {
+            case XCB_KEY_PRESS:
+                ev = reinterpret_cast<xcb_key_press_event_t *>(e);
+                if (keypress(ev)) {
                     free(e);
                     return;
                 }
@@ -317,7 +357,6 @@ Thingylaunch::eventLoop()
 xcb_query_text_extents_reply_t *
 Thingylaunch::getTextExtent(const std::string& s, int len)
 {
-    std::cout << s << " (" << len << ")" << std::endl;
     xcb_char2b_t chars[len];
     for (int i = 0; i < len; ++i) {
         chars[i].byte1 = 0;
@@ -343,15 +382,15 @@ Thingylaunch::redraw()
 
     /* get text size */
     auto wholeExt = getTextExtent(m_command, m_command.size());
-    auto partialExt = getTextExtent(m_command, m_cursorPos - m_command.begin());
+    auto partialExt = getTextExtent(m_command, m_cursorPos);
 
     /* draw the text */
     auto txtCookie = xcb_image_text_8_checked(m_connection, m_command.size(), m_win, m_fgGc, 2,
-        wholeExt->font_ascent + wholeExt->font_descent + 2, m_command.c_str());
+        WindowHeight/2 + wholeExt->font_ascent/2, m_command.c_str());
 
     /* draw the cursor */
     int16_t cursorLeft = partialExt->overall_width + 2;
-    xcb_rectangle_t curRect = { cursorLeft, 2, 2, 20 };
+    xcb_rectangle_t curRect = { cursorLeft, 6, 1, 16 };
     auto curCookie = xcb_poly_fill_rectangle_checked(m_connection, m_win, m_fgGc, 1, &curRect);
 
     free(wholeExt);
@@ -375,9 +414,14 @@ Thingylaunch::redraw()
 }
 
 bool
-Thingylaunch::keyrelease(xcb_key_release_event_t * keyevent)
+Thingylaunch::keypress(xcb_key_press_event_t * keyevent)
 {
     auto charPressed = xcb_key_symbols_get_keysym(m_keysyms, keyevent->detail, 0);
+
+    /* check for a Shift-key meaning capital letter */
+    if (keyevent->state & ShiftMask) {
+        charPressed = toupper(charPressed);
+    }
 
     /* check for an Alt-key meaning bookmark lookup */
     if (keyevent->state & Mod1Mask) {
@@ -397,42 +441,42 @@ Thingylaunch::keyrelease(xcb_key_release_event_t * keyevent)
 
         case XK_BackSpace:
             m_comp.reset();
-            if (m_cursorPos != m_command.begin())
+            if (m_cursorPos != 0)
                 m_command.erase(--m_cursorPos);
             break;
 
         case XK_Left:
         case XK_KP_Left:
-            if (m_cursorPos != m_command.begin())
+            if (m_cursorPos != 0)
                 --m_cursorPos;
             break;
 
         case XK_Right:
         case XK_KP_Right:
-            if (m_cursorPos < m_command.end())
+            if (m_cursorPos < m_command.length())
                 ++m_cursorPos;
             break;
 
         case XK_Up:
         case XK_KP_Up:
             m_command = m_hist.prev();
-            m_cursorPos = m_command.end();
+            m_cursorPos = m_command.length();
             break;
 
         case XK_Down:
         case XK_KP_Down:
             m_command = m_hist.next();
-            m_cursorPos = m_command.end();
+            m_cursorPos = m_command.length();
             break;
 
         case XK_Home:
         case XK_KP_Home:
-            m_cursorPos = m_command.begin();
+            m_cursorPos = 0;
             break;
 
         case XK_End:
         case XK_KP_End:
-            m_cursorPos = m_command.end();
+            m_cursorPos = m_command.length();
             break;
 
         case XK_Return:
@@ -444,14 +488,14 @@ Thingylaunch::keyrelease(xcb_key_release_event_t * keyevent)
         case XK_Tab:
         case XK_KP_Tab:
             m_command = m_comp.next(m_command);
-            m_cursorPos = m_command.end();
+            m_cursorPos = m_command.length();
             break;
 
         case XK_k:
             if (keyevent->state & ControlMask) {
                 m_comp.reset();
                 m_command.clear();
-                m_cursorPos = m_command.begin();
+                m_cursorPos = 0;
                 charPressed = 0; // don't handle the 'k' below
             }
             break;
@@ -459,13 +503,13 @@ Thingylaunch::keyrelease(xcb_key_release_event_t * keyevent)
         case XK_w:
             if (keyevent->state & ControlMask) {
                 auto i = m_cursorPos - 1;
-                while (i > m_command.begin()) {
-                    if (*--i == ' ') {
+                while (i > 0) {
+                    if (m_command[--i] == ' ') {
                         break;
                     }
                 }
                 /* do not remove the heading space */
-                if (i != m_command.begin()) {
+                if (i != 0) {
                     ++i;
                 }
 
@@ -482,16 +526,12 @@ Thingylaunch::keyrelease(xcb_key_release_event_t * keyevent)
 
     /* normal printable chars including Latin-[1-8] + Keybad numbers */
     if ((charPressed >= 0x20 && charPressed <= 0x13be) || (charPressed >= 0xffb0 && charPressed <= 0xffb9)) {
-        /* the m_cursorPos iterator might be invalidated
-         * because of a reallocation in m_command. Save
-         * its offset and restore it after the insertion */
-        int tmp = m_cursorPos - m_command.begin();
-        if (m_cursorPos == m_command.end()) {
+        if (m_cursorPos == m_command.length()) {
             m_command.push_back(charPressed);
         } else {
-            m_command.insert(m_cursorPos, charPressed);
+            m_command.insert(m_cursorPos, 1, charPressed);
         }
-        m_cursorPos = m_command.begin() + tmp + 1;
+        ++m_cursorPos;
         m_comp.reset();
     }
 
