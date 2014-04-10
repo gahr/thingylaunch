@@ -31,6 +31,7 @@
 #include <X11/keysymdef.h>
 
 #include <cstdlib>
+#include <ctime>
 
 #include "x11_interface.h"
 
@@ -205,13 +206,22 @@ X11XCB::setupGC(const std::string& bgColorName, const std::string& fgColorName, 
 bool
 X11XCB::grabKeyboard()
 {
-    auto cookie = xcb_grab_keyboard(m_connection, 1, m_win, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-    auto reply = xcb_grab_keyboard_reply(m_connection, cookie, NULL);
+    struct timespec req;
+    req.tv_sec = 0;
+    req.tv_nsec = 5000000;
+    unsigned long maxwait { 3000000000UL }; /* 3 seconds */
+    unsigned int i;
 
-    if (reply && reply->status == XCB_GRAB_STATUS_SUCCESS) {
-        free(reply);
-        xcb_set_input_focus(m_connection, XCB_INPUT_FOCUS_PARENT, m_win, XCB_CURRENT_TIME);
-        return true;
+    /* this loop is required since pwm grabs the keyboard during the event loop */
+    for (i = 0; i < (maxwait / req.tv_nsec); i++) {
+        nanosleep(&req, NULL);
+        auto cookie = xcb_grab_keyboard(m_connection, 1, m_win, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+        auto reply = xcb_grab_keyboard_reply(m_connection, cookie, NULL);
+        if (reply && reply->status == XCB_GRAB_STATUS_SUCCESS) {
+            free(reply);
+            xcb_set_input_focus(m_connection, XCB_INPUT_FOCUS_PARENT, m_win, XCB_CURRENT_TIME);
+            return true;
+        }
     }
 
     return false;
