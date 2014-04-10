@@ -430,13 +430,16 @@ Thingylaunch::keypress(XKeyEvent * keyevent)
 
     /* normal printable chars including Latin-[1-8] + Keybad numbers */
     if ((key_symbol >= 0x20 && key_symbol <= 0x13be) || (key_symbol >= 0xffb0 && key_symbol <= 0xffb9)) {
-        /* if we're not appending, shift the following characters */
+        /* the m_cursorPos iterator might be invalidated
+         * because of a reallocation in m_command. Save
+         * its offset and restore it after the insertion */
+        int tmp = m_cursorPos - m_command.begin();
         if (m_cursorPos == m_command.end()) {
             m_command.push_back(charPressed);
         } else {
             m_command.insert(m_cursorPos, charPressed);
         }
-        ++m_cursorPos;
+        m_cursorPos = m_command.begin() + tmp + 1;
         m_comp.reset();
     }
 
