@@ -24,8 +24,8 @@
  * SUCH DAMAGE.
  */
 
-#include <X11/Xutil.h>
-#include <X11/keysymdef.h>
+#include <X11/X.h>
+#include <X11/keysym.h>
 
 #include <libgen.h>
 #include <unistd.h>
@@ -35,9 +35,9 @@
 #include <iterator>
 #include <sstream>
 
+#include "bookmark.h"
 #include "completion.h"
 #include "history.h"
-#include "bookmark.h"
 #include "util.h"
 #include "x11_interface.h"
 

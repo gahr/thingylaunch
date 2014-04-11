@@ -23,6 +23,9 @@
  * SUCH DAMAGE.
  */
 
+#ifndef X11INTERFACE_H
+#define X11INTERFACE_H
+
 #include <string>
 
 typedef struct {
@@ -44,3 +47,5 @@ struct X11Interface {
 
     static X11Interface * create();
 };
+
+#endif /* !X11INTERFACE_H */
