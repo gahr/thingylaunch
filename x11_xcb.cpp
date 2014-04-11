@@ -27,8 +27,6 @@
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xproto.h>
-#include <X11/Xutil.h>
-#include <X11/keysymdef.h>
 
 #include <cstdlib>
 #include <ctime>
