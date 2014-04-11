@@ -6,22 +6,28 @@ Simple X11 application launcher.
 The project is a fork of the original thinglaunch by Matt Johnston, available
 at http://unix.freecode.com/projects/thinglaunch.
 
-Thingylaunch has been enhanced with tab-completion, history navigation, and
-bookmarks support. Moreover, it supports the -fg and -bg options to set the
-foreground and background colors.
+Thingylaunch has been enhanced with the following features:
 
-The history is browsed using the UpArrow and DownArrow keys. Auto-completion is
-triggered by the Tab key. Bookmarks are loaded from the
-~/.thingylaunch.bookmarks file, which consists of lines structured as follows:
+ * tab-completion
+ * history navigation, with the UpArrow and DownArrow keys
+ * bookmarks support
+   * loaded from the ~/.thingylaunch.bookmarks file, consisting of lines structured as follows:
+   <pre>char command</pre>
+   * activated by Alt+char
+ * command line arguments
+<pre>
+   -fg    foreground color
+   -bg    background color
+   ⁻fo    font foundry
+   -ff    font family
+   -fw    font weight
+   -fs    font slant
+   -fwn   font width name
+   -fsn   font style name
+   -fps   font point size
+</pre>
 
-    <char> <command>
-
-Example:
-
-    f firefox
-    x xterm
-    c gcalctool
-
-Bookmarks are activated by Alt+char, e.g., Alt+f for firefox.
+ * use either libX11 or libxcb, selected at build time using the CMake option
+   <pre>-DUSE_XCB=ON</pre>
 
 See also http://gahr.ch/thingylaunch/ .
