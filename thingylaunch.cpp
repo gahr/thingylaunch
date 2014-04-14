@@ -31,6 +31,7 @@
 #include <unistd.h>
 
 #include <cctype>
+#include <cstdlib>
 #include <iostream>
 #include <iterator>
 #include <sstream>
@@ -222,7 +223,7 @@ Thingylaunch::eventLoop()
                 }
                 break;
 
-            default:
+            case X11Event::EventType::Evt_Other:
                 break;
         }
 

@@ -278,8 +278,8 @@ X11XCB::nextEvent(X11Event& event)
     xcb_generic_event_t * e;
     xcb_key_press_event_t * kev;
 
-    bzero(&event, sizeof(event));
-    
+    event.type = X11Event::EventType::Evt_Other;
+
     e = xcb_wait_for_event(m_connection);
     if (!e) {
         return false;

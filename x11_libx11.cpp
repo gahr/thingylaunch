@@ -28,6 +28,7 @@
 
 #include <cstdlib>
 #include <ctime>
+#include <stdexcept>
 
 #include "x11_interface.h"
 #include "util.h"
@@ -129,7 +130,6 @@ unsigned long
 X11LibX11::parseColorName(const std::string& colorName)
 {
     XColor tmp;
-    bzero(&tmp, sizeof(tmp));
     XParseColor(m_display, DefaultColormap(m_display, m_screenNum), colorName.c_str(), &tmp);
     XAllocColor(m_display, DefaultColormap(m_display, m_screenNum), &tmp);
     return tmp.pixel;
@@ -209,7 +209,7 @@ X11LibX11::nextEvent(X11Event& event)
     KeySym key_symbol;
     char charPressed;
 
-    bzero(&event, sizeof(event));
+    event.type = X11Event::EventType::Evt_Other;
 
     XSelectInput(m_display, m_win, ExposureMask | KeyPressMask);
 
