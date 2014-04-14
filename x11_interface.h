@@ -31,7 +31,8 @@
 typedef struct {
     enum EventType {
         Evt_Expose,
-        Evt_KeyPress
+        Evt_KeyPress,
+        Evt_Other
     } type;
     uint16_t key;
     int state;
