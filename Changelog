@@ -1,3 +1,6 @@
+- 2.0.1
+* Chase compiler warnings
+
 - 2.0.0
 * Fix a bug where the cursor position was invalidated after a character insertion
 * Implement X11 stuff on top of both libX11 (default) and XCB (CMake -DUSE_XCB=ON)
