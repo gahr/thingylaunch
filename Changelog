@@ -1,3 +1,8 @@
+- 2.0.0
+* Fix a bug where the cursor position was invalidated after a character insertion
+* Implement X11 stuff on top of both libX11 (default) and XCB (CMake -DUSE_XCB=ON)
+* Handle more options related to font handling
+
 2014-04-08 - 1.2.2
 * Fix a bug where an uninitialized XColor struct could cause a segfault on some systems (Emanuel Haupt)
 
