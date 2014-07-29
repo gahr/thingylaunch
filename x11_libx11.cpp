@@ -29,6 +29,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <stdexcept>
+using namespace std;
 
 #include "x11_interface.h"
 #include "util.h"
@@ -39,23 +40,23 @@ class X11LibX11 : public X11Interface {
         X11LibX11();
         virtual ~X11LibX11();
         virtual bool createWindow(int width, int height);
-        virtual bool setupGC(const std::string& bgColor, const std::string& fgColor, const std::string& fontDesc);
+        virtual bool setupGC(const string& bgColor, const string& fgColor, const string& fontDesc);
         virtual bool grabKeyboard();
-        virtual bool redraw(const std::string& command, std::string::size_type cursorPos);
+        virtual bool redraw(const string& command, string::size_type cursorPos);
         virtual bool nextEvent(X11Event &ev);
 
     private:
-        std::string parseFontDesc(const std::string& fontDesc);
-        unsigned long parseColorName(const std::string& colorName);
+        string parseFontDesc(const string& fontDesc);
+        unsigned long parseColorName(const string& colorName);
 
     private:
-        std::string         m_displayName;
-        Display           * m_display;
-        GC                  m_gc;
-        GC                  m_rectgc;
-        Window              m_win;
-        XFontStruct       * m_fontInfo;
-        int                 m_screenNum;
+        string        m_displayName;
+        Display     * m_display;
+        GC            m_gc;
+        GC            m_rectgc;
+        Window        m_win;
+        XFontStruct * m_fontInfo;
+        int           m_screenNum;
 
         uint16_t m_width;
         uint16_t m_height;
@@ -88,7 +89,7 @@ X11LibX11::createWindow(int width, int height)
 
     try {
         m_displayName = Util::getEnv("DISPLAY");
-    } catch (std::runtime_error& e) {
+    } catch (runtime_error& e) {
         return false;
     }
 
@@ -127,7 +128,7 @@ X11LibX11::createWindow(int width, int height)
 }
 
 unsigned long
-X11LibX11::parseColorName(const std::string& colorName)
+X11LibX11::parseColorName(const string& colorName)
 {
     XColor tmp;
     XParseColor(m_display, DefaultColormap(m_display, m_screenNum), colorName.c_str(), &tmp);
@@ -136,7 +137,7 @@ X11LibX11::parseColorName(const std::string& colorName)
 }
 
 bool
-X11LibX11::setupGC(const std::string& bgColorName, const std::string& fgColorName, const std::string& fontDesc)
+X11LibX11::setupGC(const string& bgColorName, const string& fgColorName, const string& fontDesc)
 {
     int valuemask { 0 };
     int line_width { 1 };
@@ -187,7 +188,7 @@ X11LibX11::grabKeyboard()
 }
 
 bool
-X11LibX11::redraw(const std::string& command, std::string::size_type cursorPos)
+X11LibX11::redraw(const string& command, string::size_type cursorPos)
 {
     int font_height { m_fontInfo->ascent + m_fontInfo->descent };
     int cursorLeft { XTextWidth(m_fontInfo, command.c_str(), cursorPos) };

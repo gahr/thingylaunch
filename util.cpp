@@ -25,15 +25,16 @@
 
 #include <cstdlib> // getenv
 #include <stdexcept>
+using namespace std;
 
 #include "util.h"
 
-std::string
-Util::getEnv(std::string varName)
+string
+Util::getEnv(string varName)
 {
     const char * var { getenv(varName.c_str()) };
     if (var == nullptr) {
-        throw std::runtime_error { std::string("Could not find ") + varName + " environment variable" };
+        throw runtime_error { string("Could not find ") + varName + " environment variable" };
     }
     return var;
 }

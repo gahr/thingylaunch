@@ -30,6 +30,7 @@
 
 #include <cstdlib>
 #include <ctime>
+using namespace std;
 
 #include "x11_interface.h"
 
@@ -39,15 +40,15 @@ class X11XCB : public X11Interface {
         X11XCB();
         virtual ~X11XCB();
         virtual bool createWindow(int width, int height);
-        virtual bool setupGC(const std::string& bgColor, const std::string& fgColor, const std::string& fontDesc);
+        virtual bool setupGC(const string& bgColor, const string& fgColor, const string& fontDesc);
         virtual bool grabKeyboard();
-        virtual bool redraw(const std::string& command, std::string::size_type cursorPos);
+        virtual bool redraw(const string& command, string::size_type cursorPos);
         virtual bool nextEvent(X11Event &ev);
 
     private:
-        std::string parseFontDesc(const std::string& fontDesc);
-        uint32_t parseColorName(const std::string& colorName);
-        xcb_query_text_extents_reply_t * getTextExtent(const std::string& s, int len);
+        string parseFontDesc(const string& fontDesc);
+        uint32_t parseColorName(const string& colorName);
+        xcb_query_text_extents_reply_t * getTextExtent(const string& s, int len);
 
     private:
         xcb_connection_t  * m_connection;
@@ -135,7 +136,7 @@ X11XCB::createWindow(int width, int height)
 }
 
 uint32_t
-X11XCB::parseColorName(const std::string& colorName)
+X11XCB::parseColorName(const string& colorName)
 {
      auto lc = xcb_lookup_color(m_connection, m_screen->default_colormap, colorName.size(), colorName.c_str());
      auto lr = xcb_lookup_color_reply(m_connection, lc, NULL);
@@ -151,7 +152,7 @@ X11XCB::parseColorName(const std::string& colorName)
 }
 
 xcb_query_text_extents_reply_t *
-X11XCB::getTextExtent(const std::string& s, int len)
+X11XCB::getTextExtent(const string& s, int len)
 {
     xcb_char2b_t chars[len];
     for (int i = 0; i < len; ++i) {
@@ -166,7 +167,7 @@ X11XCB::getTextExtent(const std::string& s, int len)
 }
 
 bool
-X11XCB::setupGC(const std::string& bgColorName, const std::string& fgColorName, const std::string& fontDesc)
+X11XCB::setupGC(const string& bgColorName, const string& fgColorName, const string& fontDesc)
 {
     /* open font */
     m_font = xcb_generate_id(m_connection);
@@ -226,7 +227,7 @@ X11XCB::grabKeyboard()
 }
 
 bool
-X11XCB::redraw(const std::string& command, std::string::size_type cursorPos)
+X11XCB::redraw(const string& command, string::size_type cursorPos)
 {
     /* draw the background rectangle */
     xcb_rectangle_t extRect { 0, 0, m_width, m_height };
