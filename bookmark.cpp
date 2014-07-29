@@ -25,6 +25,8 @@
 
 #include <fstream>
 #include <iostream>
+#include <iterator>
+using namespace std;
 
 #include "bookmark.h"
 #include "util.h"
@@ -32,9 +34,9 @@
 Bookmark::Bookmark()
     : m_bookmarkFile { Util::getEnv("HOME") + "/.thingylaunch.bookmarks" }
 {
-    std::ifstream inFile { m_bookmarkFile };
+    ifstream inFile { m_bookmarkFile };
     char c;
-    std::string command;
+    string command;
     while (inFile >> c >> command)
         m_bookmarks[c] = command;
 }
@@ -44,12 +46,12 @@ Bookmark::~Bookmark()
     // nothing to do...
 }
 
-std::string
+string
 Bookmark::lookup(char letter)
 {
     auto iter = m_bookmarks.find(letter);
-    if (iter == m_bookmarks.end()) {
-        return std::string();
+    if (iter == end(m_bookmarks)) {
+        return string();
     }
     return iter->second;
 }

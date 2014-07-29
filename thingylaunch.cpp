@@ -35,6 +35,7 @@
 #include <iostream>
 #include <iterator>
 #include <sstream>
+using namespace std;
 
 #include "bookmark.h"
 #include "completion.h"
@@ -57,9 +58,9 @@ class Thingylaunch {
         void grabKeyboard();
         bool keypress(X11Event& ev);
         void execcmd();
-        void die(std::string msg);
+        void die(string msg);
 
-        std::string parseFontDesc();
+        string parseFontDesc();
 
     private:
 
@@ -67,9 +68,9 @@ class Thingylaunch {
         X11Interface * m_x11;
 
         /* User-defined options */
-        std::string m_fgColorName;
-        std::string m_bgColorName;
-        std::vector<std::string> m_fontDesc;
+        string m_fgColorName;
+        string m_bgColorName;
+        vector<string> m_fontDesc;
 
         /* Completion, history, and bookmarks */
         Completion m_comp;
@@ -77,8 +78,8 @@ class Thingylaunch {
         Bookmark   m_book;
 
         /* The command */
-        std::string m_command;
-        std::string::size_type m_cursorPos;
+        string m_command;
+        string::size_type m_cursorPos;
 
         /* The window size */
         static constexpr int WindowWidth { 640 };
@@ -98,10 +99,10 @@ Thingylaunch::~Thingylaunch()
     delete m_x11;
 }
 
-std::string
+string
 Thingylaunch::parseFontDesc()
 {
-    std::stringstream ss;
+    stringstream ss;
     for (auto& i : m_fontDesc)
         ss << "-" << i;
     return ss.str();
@@ -141,7 +142,7 @@ Thingylaunch::readOptions(int argc, char **argv)
 {
 
 #define setParam(varName) { \
-    if (i+1 == args.end()) { \
+    if (i+1 == end(args)) { \
         die("not enough parameters given"); \
     } \
     (varName) = *(i+1); \
@@ -149,10 +150,10 @@ Thingylaunch::readOptions(int argc, char **argv)
     continue; \
 }
 
-    std::vector<std::string> args;
-    std::copy(argv+1, argv+argc, std::back_inserter(args));
+    vector<string> args;
+    copy(argv+1, argv+argc, back_inserter(args));
 
-    for (auto i = args.cbegin(); i != args.cend(); ++i) {
+    for (auto i = begin(args); i != end(args); ++i) {
         const auto& s = *i;
 
         /* background color */
@@ -243,9 +244,9 @@ Thingylaunch::keypress(X11Event& ev)
 
     /* check for an Alt-key meaning bookmark lookup */
     if (ev.state & Mod1Mask) {
-        std::string book = m_book.lookup(ev.key);
+        string book = m_book.lookup(ev.key);
         if (!book.empty()) {
-            m_command = std::move(book);
+            m_command = move(book);
             m_hist.save(m_command);
             execcmd();
             return true;
@@ -363,7 +364,7 @@ Thingylaunch::execcmd()
         return;
     }
 
-    std::string shell;
+    string shell;
     try {
         shell = Util::getEnv("SHELL");
     } catch (...) {
@@ -381,9 +382,9 @@ Thingylaunch::execcmd()
 }
 
 void
-Thingylaunch::die(std::string msg)
+Thingylaunch::die(string msg)
 {
-    std::cerr << "Error: " << msg << std::endl;
+    cerr << "Error: " << msg << endl;
     exit(1);
 }
 

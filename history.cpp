@@ -26,6 +26,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+using namespace std;
 
 #include "history.h"
 #include "util.h"
@@ -33,17 +34,17 @@
 History::History()
     : m_historyFile { Util::getEnv("HOME") + "/.thingylaunch.history" }
 {
-    std::ifstream inFile { m_historyFile };
-    std::string line;
+    ifstream inFile { m_historyFile };
+    string line;
 
     while (inFile.good()) {
-        std::getline(inFile, line);
+        getline(inFile, line);
         if (!line.empty()) {
-            m_elements.push_back(std::move(line));
+            m_elements.push_back(move(line));
         }
     }
 
-    m_iter = m_elements.begin() - 1;
+    m_iter = begin(m_elements) - 1;
 }
 
 History::~History()
@@ -51,15 +52,15 @@ History::~History()
     // nothing to do...
 }
 
-std::string
+string
 History::next()
 {
     if (m_elements.empty()) {
-        return std::string();
+        return string();
     }
 
-    if (m_iter >= m_elements.end()-1) {
-        m_iter = m_elements.begin() - 1;
+    if (m_iter >= end(m_elements) - 1) {
+        m_iter = begin(m_elements) - 1;
     }
 
     ++m_iter;
@@ -67,15 +68,15 @@ History::next()
     return *m_iter;
 }
 
-std::string
+string
 History::prev()
 {
     if (m_elements.empty()) {
-        return std::string();
+        return string();
     }
 
-    if (m_iter <= m_elements.begin()) {
-        m_iter = m_elements.end();
+    if (m_iter <= begin(m_elements)) {
+        m_iter = end(m_elements);
     }
 
     --m_iter;
@@ -84,10 +85,12 @@ History::prev()
 }
 
 void
-History::save(std::string entry)
+History::save(string entry)
 {
-    std::ofstream outFile { m_historyFile };
-    std::copy (m_elements.cbegin(), m_elements.cend(), 
-            std::ostream_iterator<std::string>(outFile, "\n"));
-    outFile << entry;
+    ofstream outFile { m_historyFile };
+    copy (begin(m_elements), end(m_elements),
+            ostream_iterator<string>(outFile, "\n"));
+    if (!m_elements.size() || *(end(m_elements) - 1) != entry) {
+        outFile << entry;
+    }
 }

@@ -30,8 +30,10 @@
 
 #include <algorithm>
 #include <iostream>
+#include <iterator>
 #include <stdexcept>
 #include <sstream>
+using namespace std;
 
 #include "completion.h"
 #include "util.h"
@@ -43,15 +45,15 @@ Completion::Completion()
     gid_t gid { getgid() };
 
     /* get PATH env */
-    std::string path { Util::getEnv("PATH") };
+    string path { Util::getEnv("PATH") };
 
     /* tokenize path */
-    std::string elem;
-    std::stringstream ss { path };
-    std::vector<std::string> pathElements;
+    string elem;
+    stringstream ss { path };
+    vector<string> pathElements;
     while (ss.good()) {
         getline(ss, elem, ':');
-        pathElements.push_back(std::move(elem));
+        pathElements.push_back(move(elem));
     }
 
     for (const auto& pathElem : pathElements) {
@@ -66,7 +68,7 @@ Completion::Completion()
         struct dirent * dp;
         while ((dp = readdir(dirp))) {
 
-            std::string currentPath { pathElem + "/" + dp->d_name };
+            string currentPath { pathElem + "/" + dp->d_name };
             /* create a 'path/file' string and check whether we can access meta-information */
             if (stat(currentPath.c_str(), &sb) == -1) {
                 continue;
@@ -84,10 +86,10 @@ Completion::Completion()
         closedir(dirp);
     }
 
-    std::sort(m_elements.begin(), m_elements.end());
+    sort(begin(m_elements), end(m_elements));
 
     /* initialize iterator to the begin */
-    m_iter = m_elements.begin();
+    m_iter = begin(m_elements);
 }
 
 Completion::~Completion()
@@ -95,30 +97,30 @@ Completion::~Completion()
     // nothing to do...
 }
 
-std::string
-Completion::next(std::string command)
+string
+Completion::next(string command)
 {
     if (m_prefix.empty()) {
         m_prefix = command;
     }
 
-    auto matchPrefix = [&command, this] (std::string e) { return e.compare(0, m_prefix.size(), this->m_prefix) == 0; };
+    auto matchPrefix = [&command, this] (string e) { return e.compare(0, m_prefix.size(), this->m_prefix) == 0; };
 
     /* start from where we left off last time */
-    auto iter1 = std::find_if(m_iter, m_elements.end(), matchPrefix);
-    if (iter1 != m_elements.end()) {
+    auto iter1 = find_if(m_iter, end(m_elements), matchPrefix);
+    if (iter1 != end(m_elements)) {
         m_iter = iter1 + 1;
         return *iter1;
     }
 
     /* start over */
-    auto iter2 = std::find_if(m_elements.begin(), m_elements.end(), matchPrefix);
-    if (iter2 != m_elements.end()) {
+    auto iter2 = find_if(begin(m_elements), end(m_elements), matchPrefix);
+    if (iter2 != begin(m_elements)) {
         m_iter = iter2 + 1;
         return *iter2;
     }
 
-    m_iter = m_elements.begin();
+    m_iter = begin(m_elements);
 
     return command;
 }
@@ -127,5 +129,5 @@ void
 Completion::reset()
 {
     m_prefix.clear();
-    m_iter = m_elements.begin();
+    m_iter = begin(m_elements);
 }
