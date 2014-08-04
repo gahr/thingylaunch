@@ -1,3 +1,6 @@
+- 2.0.3
+* Fix a seg-fault when trying to tab-complete an empty command
+
 - 2.0.2
 * Do not duplicate identical entries at the end of the history
 * Import the std namespace in implementation files
