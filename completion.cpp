@@ -100,6 +100,10 @@ Completion::~Completion()
 string
 Completion::next(string command)
 {
+    if (command.empty()) {
+        return command;
+    }
+
     if (m_prefix.empty()) {
         m_prefix = command;
     }
