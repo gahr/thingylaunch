@@ -40,7 +40,7 @@ class Completion {
     private:
         std::string m_prefix;
         std::vector<std::string> m_elements;
-        std::vector<std::string>::iterator m_iter;
+        std::vector<std::string>::const_iterator m_iter;
 };
 
 #endif /* !COMPLETION_H */

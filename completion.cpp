@@ -111,7 +111,7 @@ Completion::next(string command)
     auto matchPrefix = [&command, this] (string e) { return e.compare(0, m_prefix.size(), this->m_prefix) == 0; };
 
     /* start from where we left off last time */
-    auto iter1 = find_if(m_iter, end(m_elements), matchPrefix);
+    auto iter1 = find_if(m_iter, m_elements.cend(), matchPrefix);
     if (iter1 != end(m_elements)) {
         m_iter = iter1 + 1;
         return *iter1;

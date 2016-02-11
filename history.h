@@ -40,7 +40,7 @@ class History {
     private:
         std::string m_historyFile;
         std::vector<std::string> m_elements;
-        std::vector<std::string>::iterator m_iter;
+        std::vector<std::string>::const_iterator m_iter;
 };
 
 #endif /* !HISTORY_H */
