@@ -69,10 +69,14 @@ X11Interface::create()
 }
 
 X11XCB::X11XCB()
+    : m_connection(nullptr)
 { }
 
 X11XCB::~X11XCB()
 {
+    if (!m_connection)
+        return;
+
     free(m_keysyms);
     xcb_close_font(m_connection, m_font);
     xcb_free_gc(m_connection, m_fgGc);

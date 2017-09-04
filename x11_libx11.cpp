@@ -68,10 +68,14 @@ X11Interface::create()
 }
 
 X11LibX11::X11LibX11()
+    : m_display(nullptr)
 { }
 
 X11LibX11::~X11LibX11()
 {
+    if (!m_display)
+        return;
+
     XFreeFont(m_display, m_fontInfo);
     XFreeGC(m_display, m_gc);
     XFreeGC(m_display, m_rectgc);

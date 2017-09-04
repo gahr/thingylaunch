@@ -52,7 +52,8 @@ class Thingylaunch {
         void run(int argc, char **argv);
 
     private:
-        void readOptions(int argc, char **argv);
+        bool readOptions(int argc, char **argv);
+        void usage(const char * progname);
         void setupGC();
         void eventLoop();
         void grabKeyboard();
@@ -111,7 +112,9 @@ Thingylaunch::parseFontDesc()
 void
 Thingylaunch::run(int argc, char **argv)
 {
-    readOptions(argc, argv);
+    if (!readOptions(argc, argv)) {
+        return;
+    }
 
     if (!m_x11->createWindow(WindowWidth, WindowHeight)) {
         die("Couldn't open window");
@@ -137,13 +140,14 @@ main(int argc, char **argv)
     return 0;
 }
 
-void
+bool
 Thingylaunch::readOptions(int argc, char **argv)
 {
 
 #define setParam(varName) { \
     if (i+1 == end(args)) { \
-        die("not enough parameters given"); \
+        usage(argv[0]); \
+        return false; \
     } \
     (varName) = *(i+1); \
     ++i; \
@@ -200,7 +204,27 @@ Thingylaunch::readOptions(int argc, char **argv)
         if (s == "-fpt") {
             setParam(m_fontDesc[6]); 
         }
+
+        usage(argv[0]);
+        return false;
     }
+    return true;
+}
+
+void
+Thingylaunch::usage(const char * progname)
+{
+    std::cerr <<
+        "Usage: " << progname << " "
+        "[-bg background] "
+        "[-fg foreground] "
+        "[-fo font_foundry] "
+        "[-ff font_family] "
+        "[-fw font_weight] "
+        "[-fw font_slant] "
+        "[-fwn font_width_name] "
+        "[-fsn font_style_name] "
+        "[-fpt font_point_size]\n";
 }
 
 void
