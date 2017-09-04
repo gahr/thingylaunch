@@ -1,6 +1,6 @@
 /*-
  * Copyright (C) 2003      Matt Johnston <matt@ucc.asn.au>
- * Copyright (C) 2009-2014 Pietro Cerutti <gahr@gahr.ch>
+ * Copyright (C) 2009-2017 Pietro Cerutti <gahr@gahr.ch>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
