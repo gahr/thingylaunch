@@ -46,7 +46,6 @@ class X11LibX11 : public X11Interface {
         virtual bool nextEvent(X11Event &ev);
 
     private:
-        string parseFontDesc(const string& fontDesc);
         unsigned long parseColorName(const string& colorName);
 
     private:

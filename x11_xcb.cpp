@@ -46,7 +46,6 @@ class X11XCB : public X11Interface {
         virtual bool nextEvent(X11Event &ev);
 
     private:
-        string parseFontDesc(const string& fontDesc);
         uint32_t parseColorName(const string& colorName);
         xcb_query_text_extents_reply_t * getTextExtent(const string& s, int len);
 
