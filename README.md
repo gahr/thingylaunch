@@ -29,5 +29,3 @@ Thingylaunch has been enhanced with the following features:
 
  * use either libX11 or libxcb, selected at build time using the CMake option
    <pre>-DUSE_XCB=ON</pre>
-
-See also http://gahr.ch/thingylaunch/ .
