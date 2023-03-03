@@ -108,7 +108,7 @@ Completion::next(string command)
         m_prefix = command;
     }
 
-    auto matchPrefix = [&command, this] (string e) { return e.compare(0, m_prefix.size(), this->m_prefix) == 0; };
+    auto matchPrefix = [this] (string e) { return e.compare(0, m_prefix.size(), m_prefix) == 0; };
 
     /* start from where we left off last time */
     auto iter1 = find_if(m_iter, m_elements.cend(), matchPrefix);
