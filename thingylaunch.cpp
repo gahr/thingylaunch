@@ -247,7 +247,9 @@ Thingylaunch::usage(const char * progname)
         "[-fw font_slant] "
         "[-fwn font_width_name] "
         "[-fsn font_style_name] "
-        "[-fpt font_point_size]\n";
+        "[-fpt font_point_size] "
+        "[-left x-coordinate] "
+        "[-top y-coordinate]\n";
 }
 
 void
