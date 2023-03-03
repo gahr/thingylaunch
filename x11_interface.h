@@ -40,7 +40,7 @@ typedef struct {
 
 struct X11Interface {
     virtual ~X11Interface() { }
-    virtual bool createWindow(int width, int height) =0;
+    virtual bool createWindow(int top, int left, int width, int height) =0;
     virtual bool setupGC(const std::string& bgColor, const std::string& fgColor, const std::string& fontDesc) =0;
     virtual bool grabKeyboard() =0;
     virtual bool redraw(const std::string& command, std::string::size_type cursorPos) =0;

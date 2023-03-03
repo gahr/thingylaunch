@@ -39,7 +39,7 @@ class X11LibX11 : public X11Interface {
     public:
         X11LibX11();
         virtual ~X11LibX11();
-        virtual bool createWindow(int width, int height);
+        virtual bool createWindow(int top, int left, int width, int height);
         virtual bool setupGC(const string& bgColor, const string& fgColor, const string& fontDesc);
         virtual bool grabKeyboard();
         virtual bool redraw(const string& command, string::size_type cursorPos);
@@ -85,7 +85,7 @@ X11LibX11::~X11LibX11()
 }
 
 bool
-X11LibX11::createWindow(int width, int height)
+X11LibX11::createWindow(int top, int left, int width, int height)
 {
     m_width = width;
     m_height = height;
@@ -104,8 +104,14 @@ X11LibX11::createWindow(int width, int height)
     m_screenNum = DefaultScreen(m_display);
 
     /* figure out the window location */
-    int top { DisplayHeight(m_display, m_screenNum) / 2 - height / 2 };
-    int left { DisplayWidth(m_display, m_screenNum) / 2 - width / 2 };
+    if (top < 0)
+    {
+        top = DisplayHeight(m_display, m_screenNum) / 2 - height / 2;
+    }
+    if (left < 0)
+    {
+        left = DisplayWidth(m_display, m_screenNum) / 2 - width / 2;
+    }
 
     /* create the window */
     XSetWindowAttributes attrib;

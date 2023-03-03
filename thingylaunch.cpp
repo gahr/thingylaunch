@@ -35,6 +35,7 @@
 #include <iostream>
 #include <iterator>
 #include <sstream>
+#include <string>
 using namespace std;
 
 #include "bookmark.h"
@@ -62,6 +63,7 @@ class Thingylaunch {
         void die(string msg);
 
         string parseFontDesc();
+        int parseInt(const std::string& s);
 
     private:
 
@@ -72,6 +74,7 @@ class Thingylaunch {
         string m_fgColorName;
         string m_bgColorName;
         vector<string> m_fontDesc;
+        string m_top, m_left;
 
         /* Completion, history, and bookmarks */
         Completion m_comp;
@@ -109,6 +112,16 @@ Thingylaunch::parseFontDesc()
     return ss.str();
 }
 
+int
+Thingylaunch::parseInt(const std::string& s)
+{
+    try {
+        return stoi(s);
+    } catch (exception&) {
+        return -1;
+    }
+}
+
 void
 Thingylaunch::run(int argc, char **argv)
 {
@@ -116,7 +129,7 @@ Thingylaunch::run(int argc, char **argv)
         return;
     }
 
-    if (!m_x11->createWindow(WindowWidth, WindowHeight)) {
+    if (!m_x11->createWindow(parseInt(m_top), parseInt(m_left), WindowWidth, WindowHeight)) {
         die("Couldn't open window");
     }
 
@@ -203,6 +216,16 @@ Thingylaunch::readOptions(int argc, char **argv)
         /* font point size */
         if (s == "-fpt") {
             setParam(m_fontDesc[6]); 
+        }
+
+        /* horizontal position of the center of the window */
+        if (s == "-left") {
+            setParam(m_left);
+        }
+
+        /* vertical position of the center of the window */
+        if (s == "-top") {
+            setParam(m_top);
         }
 
         usage(argv[0]);
@@ -391,7 +414,7 @@ Thingylaunch::execcmd()
     string shell;
     try {
         shell = Util::getEnv("SHELL");
-    } catch (...) {
+    } catch (exception&) {
         shell = "/bin/sh";
     }
 

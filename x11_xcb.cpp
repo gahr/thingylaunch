@@ -39,7 +39,7 @@ class X11XCB : public X11Interface {
     public:
         X11XCB();
         virtual ~X11XCB();
-        virtual bool createWindow(int width, int height);
+        virtual bool createWindow(int top, int left, int width, int height);
         virtual bool setupGC(const string& bgColor, const string& fgColor, const string& fontDesc);
         virtual bool grabKeyboard();
         virtual bool redraw(const string& command, string::size_type cursorPos);
@@ -86,7 +86,7 @@ X11XCB::~X11XCB()
 }
 
 bool
-X11XCB::createWindow(int width, int height)
+X11XCB::createWindow(int top, int left, int width, int height)
 {
     m_width = width;
     m_height = height;
@@ -104,8 +104,14 @@ X11XCB::createWindow(int width, int height)
     }
 
     /* figure out the window location */
-    int top { m_screen->height_in_pixels / 2 - height / 2 };
-    int left { m_screen->width_in_pixels / 2 - width / 2 };
+    if (top == -1)
+    {
+        top = m_screen->height_in_pixels / 2 - height / 2;
+    }
+    if (left == -1)
+    {
+        left = m_screen->width_in_pixels / 2 - width / 2;
+    }
 
     /* create the window */
     uint32_t mask { XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK };
