@@ -25,6 +25,8 @@ Thingylaunch has been enhanced with the following features:
    -fwn   font width name
    -fsn   font style name
    -fps   font point size
+   -left  x-coordinate for placing the window
+   -top   y-coordinate for placing the window
 </pre>
 
  * use either libX11 or libxcb, selected at build time using the CMake option
