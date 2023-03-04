@@ -30,6 +30,3 @@ Thingylaunch has been enhanced with the following features:
    -w     window width
    -h     window height
 </pre>
-
- * use either libX11 or libxcb, selected at build time using the CMake option
-   <pre>-DUSE_XCB=ON</pre>
