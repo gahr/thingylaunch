@@ -39,7 +39,7 @@ class X11XCB : public X11Interface {
     public:
         X11XCB();
         virtual ~X11XCB();
-        virtual bool createWindow(int top, int left, int width, int height);
+        virtual bool createWindow(int x, int y, int width, int height);
         virtual bool setupGC(const string& bgColor, const string& fgColor, const string& fontDesc);
         virtual bool grabKeyboard();
         virtual bool redraw(const string& command, string::size_type cursorPos);
@@ -86,7 +86,7 @@ X11XCB::~X11XCB()
 }
 
 bool
-X11XCB::createWindow(int top, int left, int width, int height)
+X11XCB::createWindow(int x, int y, int width, int height)
 {
     m_width = width;
     m_height = height;
@@ -104,13 +104,11 @@ X11XCB::createWindow(int top, int left, int width, int height)
     }
 
     /* figure out the window location */
-    if (top == -1)
-    {
-        top = m_screen->height_in_pixels / 2 - height / 2;
+    if (x == -1) {
+        x = m_screen->width_in_pixels / 2 - width / 2;
     }
-    if (left == -1)
-    {
-        left = m_screen->width_in_pixels / 2 - width / 2;
+    if (y == -1) {
+        y = m_screen->height_in_pixels / 2 - height / 2;
     }
 
     /* create the window */
@@ -118,14 +116,14 @@ X11XCB::createWindow(int top, int left, int width, int height)
     uint32_t value[] { 1, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS };
     m_win = xcb_generate_id(m_connection);
     auto createCookie = xcb_create_window_checked(m_connection, XCB_COPY_FROM_PARENT, m_win, m_screen->root,
-            left, top, width, height, 0, 0, m_screen->root_visual, mask, value);
+            x, y, width, height, 0, 0, m_screen->root_visual, mask, value);
 
     /* set wm hints */
     xcb_size_hints_t hints;
     hints.flags = XCB_ICCCM_SIZE_HINT_P_SIZE | XCB_ICCCM_SIZE_HINT_P_POSITION | XCB_ICCCM_SIZE_HINT_P_SIZE | 
                   XCB_ICCCM_SIZE_HINT_P_MIN_SIZE | XCB_ICCCM_SIZE_HINT_P_MAX_SIZE;
-    hints.x = top;
-    hints.y = left;
+    hints.x = x;
+    hints.y = y;
     hints.min_width = hints.max_width = width;
     hints.min_height = hints.max_height = height;
     xcb_icccm_set_wm_normal_hints_checked(m_connection, m_win, &hints);
@@ -253,12 +251,16 @@ X11XCB::redraw(const string& command, string::size_type cursorPos)
     auto partialExt = getTextExtent(command, cursorPos);
 
     /* draw the text */
-    auto txtCookie = xcb_image_text_8_checked(m_connection, command.size(), m_win, m_fgGc, 2,
-        m_height/2 + wholeExt->font_ascent/2, command.c_str());
+    int16_t textX = 2;
+    int16_t textY = m_height / 2 + wholeExt->font_ascent / 2;
+    auto txtCookie = xcb_image_text_8_checked(m_connection, command.size(), m_win, m_fgGc,
+        textX, textY, command.c_str());
 
     /* draw the cursor */
-    int16_t cursorLeft = partialExt->overall_width + 2;
-    xcb_rectangle_t curRect = { cursorLeft, 6, 1, 16 };
+    int16_t cursorX = partialExt->overall_width + 2;
+    int16_t cursorY = textY - wholeExt->font_ascent;
+    uint16_t cursorHeight = wholeExt->font_ascent + wholeExt->font_descent;
+    xcb_rectangle_t curRect = { cursorX, cursorY, 1, cursorHeight };
     auto curCookie = xcb_poly_fill_rectangle_checked(m_connection, m_win, m_fgGc, 1, &curRect);
 
     free(wholeExt);

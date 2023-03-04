@@ -63,7 +63,7 @@ class Thingylaunch {
         void die(string msg);
 
         string parseFontDesc();
-        int parseInt(const std::string& s);
+        int parseInt(const std::string& s, int def = -1);
 
     private:
 
@@ -74,7 +74,7 @@ class Thingylaunch {
         string m_fgColorName;
         string m_bgColorName;
         vector<string> m_fontDesc;
-        string m_top, m_left;
+        string m_x, m_y, m_w, m_h;
 
         /* Completion, history, and bookmarks */
         Completion m_comp;
@@ -113,12 +113,12 @@ Thingylaunch::parseFontDesc()
 }
 
 int
-Thingylaunch::parseInt(const std::string& s)
+Thingylaunch::parseInt(const std::string& s, int def)
 {
     try {
         return stoi(s);
     } catch (exception&) {
-        return -1;
+        return def;
     }
 }
 
@@ -129,7 +129,7 @@ Thingylaunch::run(int argc, char **argv)
         return;
     }
 
-    if (!m_x11->createWindow(parseInt(m_top), parseInt(m_left), WindowWidth, WindowHeight)) {
+    if (!m_x11->createWindow(parseInt(m_x), parseInt(m_y), parseInt(m_w, WindowWidth), parseInt(m_h, WindowHeight))) {
         die("Couldn't open window");
     }
 
@@ -218,14 +218,24 @@ Thingylaunch::readOptions(int argc, char **argv)
             setParam(m_fontDesc[6]); 
         }
 
-        /* horizontal position of the center of the window */
-        if (s == "-left") {
-            setParam(m_left);
+        /* window x-coordinate */
+        if (s == "-x") {
+            setParam(m_x);
         }
 
-        /* vertical position of the center of the window */
-        if (s == "-top") {
-            setParam(m_top);
+        /* window y-coordinate */
+        if (s == "-y") {
+            setParam(m_y);
+        }
+
+        /* window width */
+        if (s == "-w") {
+            setParam(m_w);
+        }
+
+        /* window height */
+        if (s == "-h") {
+            setParam(m_h);
         }
 
         usage(argv[0]);
@@ -244,12 +254,14 @@ Thingylaunch::usage(const char * progname)
         "[-fo font_foundry] "
         "[-ff font_family] "
         "[-fw font_weight] "
-        "[-fw font_slant] "
+        "[-fs font_slant] "
         "[-fwn font_width_name] "
         "[-fsn font_style_name] "
         "[-fpt font_point_size] "
-        "[-left x-coordinate] "
-        "[-top y-coordinate]\n";
+        "[-x window x-coordinate] "
+        "[-y window y-coordinate] "
+        "[-w window width] "
+        "[-h window height]\n";
 }
 
 void
