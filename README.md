@@ -3,8 +3,7 @@ thingylaunch
 
 Simple X11 application launcher.
 
-The project is a fork of the original thinglaunch by Matt Johnston, available
-at http://unix.freecode.com/projects/thinglaunch.
+This project is a complete rewrite of the original thinglaunch by Matt Johnston.
 
 Thingylaunch has been enhanced with the following features:
 
