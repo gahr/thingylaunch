@@ -1,4 +1,4 @@
-# vim: set ts=4 noexpandtab:
+# vim: set ts=8 noexpandtab:
 
 REPO=		fossil info | grep ^repository | awk '{print $$2}'
 PROG=		thingylaunch
@@ -6,19 +6,18 @@ ALL=		${PROG}
 SRCS=		bookmark.cpp completion.cpp history.cpp thingylaunch.cpp util.cpp x11_xcb.cpp
 OBJS=		${SRCS:.cpp=.o}
 JSONS=		${OBJS:.o=.o.json}
-XCB_MODULES=xcb xcb-icccm xcb-keysyms
+XCB_MODULES=	xcb xcb-icccm xcb-keysyms
 CXXFLAGS=	-std=c++11 -Wall -Werror
 CPPFLAGS=	`pkg-config --cflags ${XCB_MODULES}`
 LDFLAGS=	`pkg-config --libs ${XCB_MODULES}`
 
 .if "${DEV}"
-DEV_FLAGS= -MJ${@:.o=.o.json}
+DEV_FLAGS=	-MJ${@:.o=.o.json}
 ALL+=		compile_commands.json
 compile_commands.json: ${OBJS}
 	echo '[' > compile_commands.json
 	cat ${JSONS} >> compile_commands.json
 	echo ']' >> compile_commands.json
-
 .endif
 
 all: ${ALL}
