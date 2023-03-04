@@ -1,3 +1,9 @@
+- 3.0.0
+* Fix backspace to erase a single character
+* Allow specifying the full window geometry with -x, -y, -w, -h
+* Remove support for building against libX11 and use libxcb only
+* Remove CMake, a simple Makefile is sufficient
+
 - 2.0.3
 * Fix a seg-fault when trying to tab-complete an empty command
 
