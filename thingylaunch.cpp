@@ -321,7 +321,7 @@ Thingylaunch::keypress(X11Event& ev)
         case XK_BackSpace:
             m_comp.reset();
             if (m_cursorPos != 0)
-                m_command.erase(--m_cursorPos);
+                m_command.erase(--m_cursorPos, 1);
             break;
 
         case XK_Left:
