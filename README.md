@@ -8,14 +8,12 @@ at http://unix.freecode.com/projects/thinglaunch.
 
 Thingylaunch has been enhanced with the following features:
 
- * tab-completion
- * history navigation, with the UpArrow and DownArrow keys
- * bookmarks support
-   * loaded from the ~/.thingylaunch.bookmarks file, consisting of lines structured as follows:
-   <pre>char command</pre>
-   * activated by Alt+char
- * command line arguments
-<pre>
+* XCB backend
+* tab-completion
+* history navigation, with the UpArrow and DownArrow keys
+* bookmarks, activated by `Alt+char`, loaded from the ~/.thingylaunch.bookmarks file, which consists of lines structured as `char command`
+* command line arguments
+```
    -fg    foreground color
    -bg    background color
    ⁻fo    font foundry
@@ -29,4 +27,4 @@ Thingylaunch has been enhanced with the following features:
    -y     window y-coordinate
    -w     window width
    -h     window height
-</pre>
+```
